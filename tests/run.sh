@@ -13,8 +13,13 @@ done
 
 python3 -m compileall -q api
 
-grep -Fq 'Qwen/Qwen3-0.6B' compose.yaml
+grep -Fq 'Qwen/Qwen3.5-0.8B' compose.yaml
+grep -Fq 'AutoModelForMultimodalLM' api/model_runtime.py
+grep -Fq 'image_url.url must be an embedded PNG, JPEG, or WebP data URL' api/schemas.py
+grep -Fq 'transformers==5.17.0' requirements.txt
 grep -Fq '/v1/chat/completions' api/app.py
+grep -Fq 'chat_template_kwargs: ChatTemplateKwargs | None = None' api/schemas.py
+grep -Fq 'enable_thinking=request.thinking_enabled' api/model_runtime.py
 grep -Fq 'Authorization: Bearer' scripts/smoke_test.sh
 grep -Fq 'cap_drop:' compose.yaml
 grep -Fq 'no-new-privileges:true' compose.yaml

@@ -44,7 +44,7 @@ class Settings:
 
         return cls(
             api_key=api_key,
-            model_id=os.getenv("MODEL_ID", "Qwen/Qwen3-0.6B"),
+            model_id=os.getenv("MODEL_ID", "Qwen/Qwen3.5-0.8B"),
             model_revision=os.getenv("MODEL_REVISION", "main"),
             model_load_on_start=_boolean("MODEL_LOAD_ON_START", False),
             max_input_tokens=_positive_int("MODEL_MAX_INPUT_TOKENS", 2048, maximum=8192),
