@@ -1,7 +1,7 @@
 SHELL := /usr/bin/env bash
 .DEFAULT_GOAL := help
 
-.PHONY: help inspect setup validate build start stop restart status logs smoke smoke-model resources rotate-key test
+.PHONY: help inspect setup validate build start stop restart status logs smoke smoke-model resources rotate-key test kill-postman
 
 help:
 	@printf '%s\n' \
@@ -18,7 +18,8 @@ help:
 	  'make smoke-model Download/load the model and test generation' \
 	  'make resources   Show host and LLM Studio resource use' \
 	  'make rotate-key  Rotate the API key and recreate the API container' \
-	  'make test        Run local static/setup tests'
+	  'make test        Run local static/setup tests' \
+	  'make kill-postman Stop all hung Postman Flatpak processes'
 
 inspect:
 	@./scripts/inspect_environment.sh
@@ -61,3 +62,6 @@ rotate-key:
 
 test:
 	@./tests/run.sh
+
+kill-postman:
+	@./scripts/kill-hung-postman.sh
