@@ -9,7 +9,7 @@ require_command curl
 bind_address="$(env_value LLM_STUDIO_BIND_ADDRESS 127.0.0.1)"
 port="$(env_value LLM_STUDIO_PORT 18080)"
 api_key="$(env_value LLM_STUDIO_API_KEY '')"
-model_id="$(env_value MODEL_ID Qwen/Qwen3-0.6B)"
+model_id="$(env_value MODEL_ID Qwen/Qwen3.5-0.8B)"
 
 response_file="$(mktemp)"
 trap 'rm -f -- "${response_file}"' EXIT

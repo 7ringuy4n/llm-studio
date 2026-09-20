@@ -1,6 +1,6 @@
-# Private Qwen3 LLM Studio API Setup
+# Private Qwen3.5 Multimodal LLM Studio API Setup
 
-This repository contains the setup layer for a CPU-only Qwen3 learning lab on
+This repository contains the setup layer for a CPU-only Qwen3.5 multimodal learning lab on
 an Ubuntu VPS. It exposes a small OpenAI-compatible REST surface while remaining
 isolated from an existing Hermes installation.
 
@@ -8,7 +8,7 @@ For the hands-on learning sequence, start with the
 [AI Model Training Handbook](docs/README.md).
 
 The configured upstream model identifier is
-[`Qwen/Qwen3-0.6B`](https://huggingface.co/Qwen/Qwen3-0.6B), as published by
+[`Qwen/Qwen3.5-0.8B`](https://huggingface.co/Qwen/Qwen3.5-0.8B), as published by
 Qwen. This setup provides inference and a secure service boundary; the larger
 training and RAG curriculum described in `prompt.md` remains a separate phase.
 
@@ -88,10 +88,15 @@ The supported compatibility surface is:
 - `POST /v1/chat/completions` — authenticated chat completion, including SSE
   responses when `stream: true`
 
-This is OpenAI chat-completions compatibility, not the Anthropic Messages API.
-Tool calls, image inputs, audio, batches, assistants, and file APIs are not
-implemented. Streaming is response-framed after generation rather than true
-token-by-token streaming.
+This is a focused OpenAI chat-completions compatibility surface. Text and
+image inputs are supported; tool calls, audio, video, batches, assistants, and
+file APIs are not implemented. Streaming is response-framed after generation
+rather than true token-by-token streaming.
+
+For security, image input must be an embedded PNG, JPEG, or WebP data URL.
+Remote URLs and local file paths are rejected, preventing the API from becoming
+an SSRF or local-file proxy. A request may contain at most two images, each no
+larger than 3 MiB decoded and 2048 pixels on either side.
 
 Read the generated key without placing it in shell history:
 
@@ -115,9 +120,51 @@ curl --fail-with-body \
 curl --fail-with-body \
   --header "Authorization: Bearer ${OPENAI_API_KEY}" \
   --header 'Content-Type: application/json' \
-  --data '{"model":"Qwen/Qwen3-0.6B","messages":[{"role":"user","content":"Explain LoRA briefly."}],"max_tokens":128,"temperature":0}' \
+  --data '{"model":"Qwen/Qwen3.5-0.8B","messages":[{"role":"user","content":"Explain LoRA briefly."}],"max_tokens":128,"temperature":0}' \
   "${OPENAI_BASE_URL}/chat/completions"
 ```
+
+Qwen3.5 reasoning mode is opt-in per request with `enable_thinking`. The
+older `chat_template_kwargs.enable_thinking` form remains accepted for client
+compatibility:
+
+```bash
+curl --fail-with-body \
+  --header "Authorization: Bearer ${OPENAI_API_KEY}" \
+  --header 'Content-Type: application/json' \
+  --data '{"model":"Qwen/Qwen3.5-0.8B","messages":[{"role":"user","content":"Which is larger: 9.11 or 9.9? Explain."}],"enable_thinking":true,"max_tokens":512,"temperature":1.0,"top_p":0.95,"top_k":20,"min_p":0.0}' \
+  "${OPENAI_BASE_URL}/chat/completions"
+```
+
+Thinking tokens share the `max_tokens` budget with the final answer. Qwen
+warns that the 0.8B checkpoint can enter long thinking loops, so use a bounded
+budget and timeout. The raw response may contain a `<think>...</think>` block;
+this minimal API does not split reasoning into a separate response field.
+
+## Multimodal image request
+
+Send an embedded data URL through an OpenAI-compatible `image_url` content part:
+
+```json
+{
+  "model": "Qwen/Qwen3.5-0.8B",
+  "messages": [{
+    "role": "user",
+    "content": [
+      {"type": "image_url", "image_url": {"url": "data:image/png;base64,..."}},
+      {"type": "text", "text": "Describe this image concisely."}
+    ]
+  }],
+  "max_tokens": 160,
+  "temperature": 0.7,
+  "top_p": 0.8,
+  "top_k": 20
+}
+```
+
+The Postman environment contains a runnable sample in `sampleImageDataUrl`.
+Keep images small on this CPU-only VPS; vision preprocessing and generation are
+substantially slower than short text requests.
 
 Coding clients that support a custom OpenAI-compatible base URL can use those
 two environment variables. Client-specific features that require tool calling
@@ -146,7 +193,7 @@ modification command in this project.
 
 ## Current limits
 
-Qwen3-0.6B is suitable for learning, classification, and small experiments. It
+Qwen3.5-0.8B is suitable for learning, classification, and small experiments. It
 is not comparable to a large production coding model. CPU generation will be
 slow, the in-memory rate limiter resets with the single API process, and a timed
 out PyTorch generation cannot safely be killed mid-thread. The concurrency slot

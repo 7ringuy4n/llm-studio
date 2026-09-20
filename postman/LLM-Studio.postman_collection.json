@@ -1,73 +1,698 @@
 {
   "info": {
     "_postman_id": "d887d4c8-e061-4f93-9d8f-e5ab75879a49",
-    "name": "LLM Studio - Qwen3 0.6B",
+    "name": "LLM Studio - Qwen3.5 0.8B",
     "description": "OpenAI-compatible, API-key-protected requests for the VPN-only LLM Studio service.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "auth": {
     "type": "bearer",
-    "bearer": [{ "key": "token", "value": "{{apiKey}}", "type": "string" }]
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{apiKey}}",
+        "type": "string"
+      }
+    ]
   },
-  "event": [{
-    "listen": "test",
-    "script": {
-      "type": "text/javascript",
-      "exec": [
-        "pm.test('X-Request-ID is present', () => pm.expect(pm.response.headers.get('X-Request-ID')).to.be.ok);",
-        "pm.test('Responses are not cached', () => pm.expect(pm.response.headers.get('Cache-Control')).to.eql('no-store'));",
-        "pm.test('MIME sniffing is disabled', () => pm.expect(pm.response.headers.get('X-Content-Type-Options')).to.eql('nosniff'));"
-      ]
+  "event": [
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "pm.test('X-Request-ID is present', () => pm.expect(pm.response.headers.get('X-Request-ID')).to.be.ok);",
+          "pm.test('Responses are not cached', () => pm.expect(pm.response.headers.get('Cache-Control')).to.eql('no-store'));",
+          "pm.test('MIME sniffing is disabled', () => pm.expect(pm.response.headers.get('X-Content-Type-Options')).to.eql('nosniff'));"
+        ]
+      }
     }
-  }],
+  ],
   "item": [
     {
       "name": "Service",
-      "item": [{
-        "name": "Health",
-        "request": { "auth": { "type": "noauth" }, "method": "GET", "url": "{{baseUrl}}/health" },
-        "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
-          "pm.test('Status is 200', () => pm.response.to.have.status(200));",
-          "pm.test('Service is healthy', () => pm.expect(pm.response.json().status).to.eql('ok'));"
-        ] } }]
-      }]
+      "item": [
+        {
+          "name": "Health",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "url": "{{baseUrl}}/health"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Service is healthy', () => pm.expect(pm.response.json().status).to.eql('ok'));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
     },
     {
       "name": "OpenAI-compatible API",
       "item": [
         {
           "name": "List Models",
-          "request": { "method": "GET", "url": "{{baseUrl}}/v1/models" },
-          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
-            "pm.test('Status is 200', () => pm.response.to.have.status(200));",
-            "pm.test('Configured model is listed', () => pm.expect(pm.response.json().data[0].id).to.eql(pm.environment.get('model')));"
-          ] } }]
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/v1/models"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Configured model is listed', () => pm.expect(pm.response.json().data[0].id).to.eql(pm.environment.get('model')));"
+                ]
+              }
+            }
+          ]
         },
         {
           "name": "Chat Completion",
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "body": { "mode": "raw", "raw": "{\n  \"model\": \"{{model}}\",\n  \"messages\": [\n    {\"role\": \"system\", \"content\": \"Answer concisely.\"},\n    {\"role\": \"user\", \"content\": \"Reply with exactly: LLM Studio is ready\"}\n  ],\n  \"max_tokens\": 32,\n  \"temperature\": 0,\n  \"stream\": false\n}" },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"model\": \"{{model}}\",\n  \"messages\": [\n    {\"role\": \"system\", \"content\": \"Answer concisely.\"},\n    {\"role\": \"user\", \"content\": \"Reply with exactly: LLM Studio is ready\"}\n  ],\n  \"max_tokens\": 32,\n  \"temperature\": 0,\n  \"stream\": false\n}"
+            },
             "url": "{{baseUrl}}/v1/chat/completions"
           },
-          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
-            "pm.test('Status is 200', () => pm.response.to.have.status(200));",
-            "pm.test('OpenAI response shape is valid', () => { const b = pm.response.json(); pm.expect(b.object).to.eql('chat.completion'); pm.expect(b.choices[0].message.role).to.eql('assistant'); pm.expect(b.usage.total_tokens).to.be.a('number'); });"
-          ] } }]
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('OpenAI response shape is valid', () => { const b = pm.response.json(); pm.expect(b.object).to.eql('chat.completion'); pm.expect(b.choices[0].message.role).to.eql('assistant'); pm.expect(b.usage.total_tokens).to.be.a('number'); });"
+                ]
+              }
+            }
+          ]
         },
         {
           "name": "Streaming Chat Completion",
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "body": { "mode": "raw", "raw": "{\n  \"model\": \"{{model}}\",\n  \"messages\": [{\"role\": \"user\", \"content\": \"Say hello in one short sentence.\"}],\n  \"max_tokens\": 24,\n  \"temperature\": 0,\n  \"stream\": true\n}" },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"model\": \"{{model}}\",\n  \"messages\": [{\"role\": \"user\", \"content\": \"Say hello in one short sentence.\"}],\n  \"max_tokens\": 24,\n  \"temperature\": 0,\n  \"stream\": true\n}"
+            },
             "url": "{{baseUrl}}/v1/chat/completions"
           },
-          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
-            "pm.test('Status is 200', () => pm.response.to.have.status(200));",
-            "pm.test('SSE stream terminates', () => pm.expect(pm.response.text()).to.include('data: [DONE]'));"
-          ] } }]
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('SSE stream terminates', () => pm.expect(pm.response.text()).to.include('data: [DONE]'));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Advanced LLM Examples",
+      "description": "Complex prompting, reasoning, natural communication, multimodal image analysis, concurrency behavior, and explicit client-managed memory.",
+      "item": [
+        {
+          "name": "Complex Structured Prompt",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Request-ID",
+                "value": "postman-{{$guid}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"model\": \"{{model}}\",\n  \"messages\": [\n    {\n      \"role\": \"system\",\n      \"content\": \"You are a senior reliability engineer. Analyze evidence carefully, distinguish facts from assumptions, and return practical actions. Do not invent missing telemetry.\"\n    },\n    {\n      \"role\": \"user\",\n      \"content\": \"A checkout API had latency rise from 180 ms to 4.2 s after a deployment. CPU stayed below 45%, memory rose from 55% to 82%, database connections reached 98%, and rolling back the app did not immediately recover latency. Produce: (1) a ranked hypothesis table with evidence for and against each cause, (2) a 15-minute mitigation plan, (3) five verification commands or queries, and (4) longer-term prevention. Mark every assumption explicitly.\"\n    }\n  ],\n  \"max_tokens\": 320,\n  \"temperature\": 0.2,\n  \"top_p\": 0.9,\n  \"stream\": false\n}"
+            },
+            "url": "{{baseUrl}}/v1/chat/completions",
+            "description": "Multi-constraint incident-analysis prompt. Saves the reply and trace ID in the selected environment."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('Complex reply is non-empty', () => pm.expect(body.choices[0].message.content).to.be.a('string').and.not.empty);",
+                  "pm.environment.set('lastRequestId', pm.response.headers.get('X-Request-ID') || '');",
+                  "pm.environment.set('lastAssistantReply', body.choices[0].message.content);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Reasoning Mode - Qwen3.5 Thinking",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Request-ID",
+                "value": "postman-reasoning-{{$guid}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"model\": \"{{model}}\",\n  \"messages\": [\n    {\n      \"role\": \"system\",\n      \"content\": \"Reason carefully, verify the comparison, and finish with a concise final answer.\"\n    },\n    {\n      \"role\": \"user\",\n      \"content\": \"Which number is larger: 9.11 or 9.9? Explain why.\"\n    }\n  ],\n  \"max_tokens\": 512,\n  \"temperature\": 1.0,\n  \"top_p\": 0.95,\n  \"stream\": false,\n  \"enable_thinking\": true,\n  \"top_k\": 20,\n  \"min_p\": 0.0,\n  \"repetition_penalty\": 1.0,\n  \"seed\": 42\n}"
+            },
+            "url": "{{baseUrl}}/v1/chat/completions",
+            "description": "Enables Qwen3.5 thinking with enable_thinking=true. Thinking shares max_tokens with the final answer and can be slow on CPU."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "const reasoningResult = pm.response.json();",
+                  "const reasoningText = reasoningResult.choices[0].message.content;",
+                  "pm.test('Reasoning reply is non-empty', () => pm.expect(reasoningText).to.be.a('string').and.not.empty);",
+                  "pm.environment.set('lastAssistantReply', reasoningText);",
+                  "pm.environment.set('lastRequestId', pm.response.headers.get('X-Request-ID') || '');"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Natural Communication",
+          "description": "A reusable communication-style system prompt plus a contextual follow-up. The style is editable in communicationSkillPrompt.",
+          "item": [
+            {
+              "name": "Natural Reply 1 - Helpful Support Response",
+              "event": [
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const style = pm.environment.get('communicationSkillPrompt');",
+                      "if (!style) { throw new Error('communicationSkillPrompt is empty'); }",
+                      "const payload = {",
+                      "  model: pm.environment.get('model'),",
+                      "  messages: [",
+                      "    { role: 'system', content: style },",
+                      "    { role: 'user', content: 'A customer says: I uploaded the same report three times, but it still does not appear. Write a helpful response. We know processing is delayed by about 15 minutes; no data was lost. Give one immediate action and one fallback.' }",
+                      "  ],",
+                      "  max_tokens: 180, temperature: 0.4, top_p: 0.9, stream: false",
+                      "};",
+                      "pm.variables.set('naturalRequestBody', JSON.stringify(payload));"
+                    ]
+                  }
+                },
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                      "const sent = JSON.parse(pm.variables.get('naturalRequestBody'));",
+                      "const assistant = pm.response.json().choices[0].message;",
+                      "pm.test('Natural reply is non-empty', () => pm.expect(assistant.content).to.be.a('string').and.not.empty);",
+                      "pm.environment.set('communicationHistory', JSON.stringify([...sent.messages, assistant]));",
+                      "pm.environment.set('lastAssistantReply', assistant.content);",
+                      "pm.environment.set('lastRequestId', pm.response.headers.get('X-Request-ID') || '');"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{{naturalRequestBody}}"
+                },
+                "url": "{{baseUrl}}/v1/chat/completions",
+                "description": "Uses communicationSkillPrompt as a reusable natural-response skill and saves the complete exchange for the follow-up."
+              }
+            },
+            {
+              "name": "Natural Reply 2 - Contextual Follow-up",
+              "event": [
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "let history;",
+                      "try { history = JSON.parse(pm.environment.get('communicationHistory') || '[]'); } catch (error) { throw new Error('communicationHistory is invalid JSON'); }",
+                      "if (!Array.isArray(history) || history.length < 3) { throw new Error('Run Natural Reply 1 - Helpful Support Response first'); }",
+                      "const followUp = 'Make the response slightly warmer and shorter, while retaining the delay, no-data-loss, immediate action, and fallback facts.';",
+                      "const payload = {",
+                      "  model: pm.environment.get('model'),",
+                      "  messages: [...history, { role: 'user', content: followUp }],",
+                      "  max_tokens: 140, temperature: 0.35, top_p: 0.9, stream: false",
+                      "};",
+                      "pm.variables.set('naturalFollowUpBody', JSON.stringify(payload));"
+                    ]
+                  }
+                },
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                      "const sent = JSON.parse(pm.variables.get('naturalFollowUpBody'));",
+                      "const assistant = pm.response.json().choices[0].message;",
+                      "pm.test('Communication context was replayed', () => pm.expect(sent.messages.length).to.be.above(3));",
+                      "pm.test('Follow-up reply is non-empty', () => pm.expect(assistant.content).to.be.a('string').and.not.empty);",
+                      "pm.environment.set('communicationHistory', JSON.stringify([...sent.messages, assistant]));",
+                      "pm.environment.set('lastAssistantReply', assistant.content);",
+                      "pm.environment.set('lastRequestId', pm.response.headers.get('X-Request-ID') || '');"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{{naturalFollowUpBody}}"
+                },
+                "url": "{{baseUrl}}/v1/chat/completions",
+                "description": "Replays the natural-communication exchange and asks for a shorter, warmer revision without losing factual constraints."
+              }
+            }
+          ]
+        },
+        {
+          "name": "Multimodal Image Requests",
+          "description": "Runnable image examples using a small embedded PNG. Replace sampleImageDataUrl with your own PNG, JPEG, or WebP data URL.",
+          "item": [
+            {
+              "name": "Describe Image",
+              "event": [
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const image = pm.environment.get('sampleImageDataUrl') || '';",
+                      "if (!image.startsWith('data:image/')) { throw new Error('sampleImageDataUrl must be an embedded image data URL'); }"
+                    ]
+                  }
+                },
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                      "const multimodalResult = pm.response.json();",
+                      "const multimodalText = multimodalResult.choices[0].message.content;",
+                      "pm.test('Multimodal reply is non-empty', () => pm.expect(multimodalText).to.be.a('string').and.not.empty);",
+                      "pm.environment.set('lastAssistantReply', multimodalText);",
+                      "pm.environment.set('lastRequestId', pm.response.headers.get('X-Request-ID') || '');"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "X-Request-ID",
+                    "value": "postman-vision-{{$guid}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"model\": \"{{model}}\",\n  \"messages\": [\n    {\n      \"role\": \"user\",\n      \"content\": [\n        {\n          \"type\": \"image_url\",\n          \"image_url\": {\n            \"url\": \"{{sampleImageDataUrl}}\",\n            \"detail\": \"low\"\n          }\n        },\n        {\n          \"type\": \"text\",\n          \"text\": \"Describe this image in one concise sentence. Count the large vertical color panels and name their colors from left to right.\"\n        }\n      ]\n    }\n  ],\n  \"max_tokens\": 120,\n  \"temperature\": 0.7,\n  \"top_p\": 0.8,\n  \"top_k\": 20,\n  \"min_p\": 0.0,\n  \"repetition_penalty\": 1.0,\n  \"enable_thinking\": false,\n  \"stream\": false\n}"
+                },
+                "url": "{{baseUrl}}/v1/chat/completions",
+                "description": "Sends the embedded sample PNG through the OpenAI-compatible image_url content format."
+              }
+            },
+            {
+              "name": "Extract Image as JSON",
+              "event": [
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const image = pm.environment.get('sampleImageDataUrl') || '';",
+                      "if (!image.startsWith('data:image/')) { throw new Error('sampleImageDataUrl must be an embedded image data URL'); }"
+                    ]
+                  }
+                },
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                      "const multimodalResult = pm.response.json();",
+                      "const multimodalText = multimodalResult.choices[0].message.content;",
+                      "pm.test('Multimodal reply is non-empty', () => pm.expect(multimodalText).to.be.a('string').and.not.empty);",
+                      "pm.environment.set('lastAssistantReply', multimodalText);",
+                      "pm.environment.set('lastRequestId', pm.response.headers.get('X-Request-ID') || '');"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "X-Request-ID",
+                    "value": "postman-vision-{{$guid}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"model\": \"{{model}}\",\n  \"messages\": [\n    {\n      \"role\": \"user\",\n      \"content\": [\n        {\n          \"type\": \"image_url\",\n          \"image_url\": {\n            \"url\": \"{{sampleImageDataUrl}}\",\n            \"detail\": \"low\"\n          }\n        },\n        {\n          \"type\": \"text\",\n          \"text\": \"Inspect the image and return JSON only with these keys: panel_count, colors_left_to_right, orientation, and confidence.\"\n        }\n      ]\n    }\n  ],\n  \"max_tokens\": 160,\n  \"temperature\": 0.7,\n  \"top_p\": 0.8,\n  \"top_k\": 20,\n  \"min_p\": 0.0,\n  \"repetition_penalty\": 1.0,\n  \"enable_thinking\": false,\n  \"stream\": false\n}"
+                },
+                "url": "{{baseUrl}}/v1/chat/completions",
+                "description": "Sends the embedded sample PNG through the OpenAI-compatible image_url content format."
+              }
+            },
+            {
+              "name": "Reason About Image",
+              "event": [
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const image = pm.environment.get('sampleImageDataUrl') || '';",
+                      "if (!image.startsWith('data:image/')) { throw new Error('sampleImageDataUrl must be an embedded image data URL'); }"
+                    ]
+                  }
+                },
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                      "const multimodalResult = pm.response.json();",
+                      "const multimodalText = multimodalResult.choices[0].message.content;",
+                      "pm.test('Multimodal reply is non-empty', () => pm.expect(multimodalText).to.be.a('string').and.not.empty);",
+                      "pm.environment.set('lastAssistantReply', multimodalText);",
+                      "pm.environment.set('lastRequestId', pm.response.headers.get('X-Request-ID') || '');"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "X-Request-ID",
+                    "value": "postman-vision-{{$guid}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"model\": \"{{model}}\",\n  \"messages\": [\n    {\n      \"role\": \"user\",\n      \"content\": [\n        {\n          \"type\": \"image_url\",\n          \"image_url\": {\n            \"url\": \"{{sampleImageDataUrl}}\",\n            \"detail\": \"low\"\n          }\n        },\n        {\n          \"type\": \"text\",\n          \"text\": \"Reason about the layout: if each large colored panel represents one service replica, how many replicas are shown and which color is in the middle? End with a one-sentence final answer.\"\n        }\n      ]\n    }\n  ],\n  \"max_tokens\": 320,\n  \"temperature\": 0.6,\n  \"top_p\": 0.95,\n  \"top_k\": 20,\n  \"min_p\": 0.0,\n  \"repetition_penalty\": 1.0,\n  \"enable_thinking\": true,\n  \"stream\": false\n}"
+                },
+                "url": "{{baseUrl}}/v1/chat/completions",
+                "description": "Sends the embedded sample PNG through the OpenAI-compatible image_url content format."
+              }
+            }
+          ]
+        },
+        {
+          "name": "Concurrency",
+          "item": [
+            {
+              "name": "Concurrent Batch (3 by default)",
+              "event": [
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const requested = Number(pm.environment.get('concurrentRequests') || 3);",
+                      "const count = Math.max(2, Math.min(Number.isFinite(requested) ? requested : 3, 4));",
+                      "const baseUrl = pm.environment.get('baseUrl');",
+                      "const model = pm.environment.get('model');",
+                      "const token = pm.environment.get('apiKey');",
+                      "if (!token) { throw new Error('Set apiKey in the selected environment first'); }",
+                      "const started = Date.now();",
+                      "const results = [];",
+                      "let completed = 0;",
+                      "pm.variables.set('concurrentCount', String(count));",
+                      "for (let index = 0; index < count; index += 1) {",
+                      "  pm.sendRequest({",
+                      "    url: `${baseUrl}/v1/chat/completions`,",
+                      "    method: 'POST',",
+                      "    header: {",
+                      "      'Authorization': `Bearer ${token}`,",
+                      "      'Content-Type': 'application/json',",
+                      "      'X-Request-ID': `postman-concurrent-${started}-${index + 1}`",
+                      "    },",
+                      "    body: { mode: 'raw', raw: JSON.stringify({",
+                      "      model,",
+                      "      messages: [{ role: 'user', content: `Worker ${index + 1}: explain split tunneling in one sentence.` }],",
+                      "      max_tokens: 40, temperature: 0, stream: false",
+                      "    }) }",
+                      "  }, (error, response) => {",
+                      "    results[index] = {",
+                      "      worker: index + 1,",
+                      "      status: response ? response.code : 0,",
+                      "      requestId: response ? (response.headers.get('X-Request-ID') || '') : '',",
+                      "      error: error ? error.message : '',",
+                      "      durationMs: Date.now() - started",
+                      "    };",
+                      "    completed += 1;",
+                      "    if (completed === count) {",
+                      "      const serialized = JSON.stringify(results);",
+                      "      pm.variables.set('concurrentResults', serialized);",
+                      "      pm.environment.set('lastConcurrentResults', serialized);",
+                      "      console.log('Concurrent batch results', results);",
+                      "    }",
+                      "  });",
+                      "}"
+                    ]
+                  }
+                },
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Coordinator health request succeeds', () => pm.response.to.have.status(200));",
+                      "const results = JSON.parse(pm.variables.get('concurrentResults') || '[]');",
+                      "const count = Number(pm.variables.get('concurrentCount'));",
+                      "const limit = Number(pm.environment.get('maxConcurrentRequests') || 1);",
+                      "pm.test('Every concurrent response is captured', () => pm.expect(results).to.have.length(count));",
+                      "pm.test('Only success or busy responses occur', () => pm.expect(results.every(r => [200, 429].includes(r.status))).to.eql(true));",
+                      "pm.test('Configured generation slots succeed', () => pm.expect(results.filter(r => r.status === 200)).to.have.length(Math.min(limit, count)));",
+                      "pm.test('Excess concurrent calls are rejected as busy', () => pm.expect(results.filter(r => r.status === 429)).to.have.length(Math.max(0, count - limit)));"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "auth": {
+                  "type": "noauth"
+                },
+                "method": "GET",
+                "url": "{{baseUrl}}/health",
+                "description": "The pre-request script launches 2-4 chat completions concurrently. The visible GET coordinates the run and reports assertions."
+              }
+            }
+          ]
+        },
+        {
+          "name": "Client-managed Memory",
+          "item": [
+            {
+              "name": "Memory 1 - Start Conversation",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"model\": \"{{model}}\",\n  \"messages\": [\n    {\n      \"role\": \"system\",\n      \"content\": \"Remember facts supplied in this conversation and answer follow-up questions concisely.\"\n    },\n    {\n      \"role\": \"user\",\n      \"content\": \"Remember these project facts: codename Kestrel, status color amber, and target number 42. Confirm briefly.\"\n    }\n  ],\n  \"max_tokens\": 80,\n  \"temperature\": 0,\n  \"stream\": false\n}"
+                },
+                "url": "{{baseUrl}}/v1/chat/completions",
+                "description": "Starts a conversation and stores both messages plus the assistant reply in conversationHistory."
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                      "const memoryStartRequest = JSON.parse(pm.variables.replaceIn(pm.request.body.raw));",
+                      "const memoryStartResponse = pm.response.json();",
+                      "const assistant = memoryStartResponse.choices[0].message;",
+                      "pm.environment.set('conversationHistory', JSON.stringify([...memoryStartRequest.messages, assistant]));",
+                      "pm.environment.set('lastAssistantReply', assistant.content);",
+                      "pm.environment.set('lastRequestId', pm.response.headers.get('X-Request-ID') || '');",
+                      "pm.test('Conversation history now has three messages', () => pm.expect(JSON.parse(pm.environment.get('conversationHistory'))).to.have.length(3));"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Memory 2 - Recall with History",
+              "event": [
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "let history;",
+                      "try { history = JSON.parse(pm.environment.get('conversationHistory') || '[]'); } catch (error) { throw new Error('conversationHistory is invalid JSON'); }",
+                      "if (!Array.isArray(history) || history.length < 3) { throw new Error('Run Memory 1 - Start Conversation first'); }",
+                      "const question = 'What were the codename, status color, and target number?';",
+                      "const payload = {",
+                      "  model: pm.environment.get('model'),",
+                      "  messages: [...history, { role: 'user', content: question }],",
+                      "  max_tokens: 100, temperature: 0, stream: false",
+                      "};",
+                      "pm.variables.set('memoryQuestion', question);",
+                      "pm.variables.set('memoryRequestBody', JSON.stringify(payload));"
+                    ]
+                  }
+                },
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                      "const sent = JSON.parse(pm.variables.get('memoryRequestBody'));",
+                      "const assistant = pm.response.json().choices[0].message;",
+                      "pm.test('Earlier turns were resent', () => pm.expect(sent.messages.length).to.be.above(3));",
+                      "pm.test('Recall reply is non-empty', () => pm.expect(assistant.content).to.be.a('string').and.not.empty);",
+                      "pm.environment.set('conversationHistory', JSON.stringify([...sent.messages, assistant]));",
+                      "pm.environment.set('lastAssistantReply', assistant.content);",
+                      "pm.environment.set('lastRequestId', pm.response.headers.get('X-Request-ID') || '');"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{{memoryRequestBody}}"
+                },
+                "url": "{{baseUrl}}/v1/chat/completions",
+                "description": "Replays conversationHistory, adds a follow-up, and stores the completed turn. The server itself remains stateless."
+              }
+            },
+            {
+              "name": "Memory 3 - Clear Client Memory",
+              "event": [
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.environment.set('conversationHistory', '[]');",
+                      "pm.environment.unset('lastAssistantReply');",
+                      "pm.environment.unset('lastRequestId');"
+                    ]
+                  }
+                },
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Coordinator health request succeeds', () => pm.response.to.have.status(200));",
+                      "pm.test('Client memory is empty', () => pm.expect(pm.environment.get('conversationHistory')).to.eql('[]'));"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "auth": {
+                  "type": "noauth"
+                },
+                "method": "GET",
+                "url": "{{baseUrl}}/health",
+                "description": "Clears only Postman environment history; it does not call a server-side memory endpoint."
+              }
+            }
+          ]
         }
       ]
     },
@@ -76,28 +701,109 @@
       "item": [
         {
           "name": "Reject Missing API Key",
-          "request": { "auth": { "type": "noauth" }, "method": "GET", "url": "{{baseUrl}}/v1/models" },
-          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status is 401', () => pm.response.to.have.status(401));"] } }]
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "url": "{{baseUrl}}/v1/models"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 401', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ]
         },
         {
           "name": "Reject Unknown Model",
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "body": { "mode": "raw", "raw": "{\n  \"model\": \"unknown/model\",\n  \"messages\": [{\"role\": \"user\", \"content\": \"Hello\"}],\n  \"max_tokens\": 8\n}" },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"model\": \"unknown/model\",\n  \"messages\": [{\"role\": \"user\", \"content\": \"Hello\"}],\n  \"max_tokens\": 8\n}"
+            },
             "url": "{{baseUrl}}/v1/chat/completions"
           },
-          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status is 404', () => pm.response.to.have.status(404));"] } }]
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 404', () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ]
         },
         {
           "name": "Reject Excessive max_tokens",
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "body": { "mode": "raw", "raw": "{\n  \"model\": \"{{model}}\",\n  \"messages\": [{\"role\": \"user\", \"content\": \"Hello\"}],\n  \"max_tokens\": 999999\n}" },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"model\": \"{{model}}\",\n  \"messages\": [{\"role\": \"user\", \"content\": \"Hello\"}],\n  \"max_tokens\": 999999\n}"
+            },
             "url": "{{baseUrl}}/v1/chat/completions"
           },
-          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status is 400', () => pm.response.to.have.status(400));"] } }]
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Reject Remote Image URL",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"model\": \"{{model}}\",\n  \"messages\": [\n    {\n      \"role\": \"user\",\n      \"content\": [\n        {\n          \"type\": \"image_url\",\n          \"image_url\": {\n            \"url\": \"https://example.com/image.png\"\n          }\n        },\n        {\n          \"type\": \"text\",\n          \"text\": \"Describe this image.\"\n        }\n      ]\n    }\n  ],\n  \"max_tokens\": 32\n}"
+            },
+            "url": "{{baseUrl}}/v1/chat/completions",
+            "description": "Remote media fetching is rejected to prevent SSRF. Use embedded PNG, JPEG, or WebP data URLs."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 422', () => pm.response.to.have.status(422));"
+                ]
+              }
+            }
+          ]
         }
       ]
     }

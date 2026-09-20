@@ -1,4 +1,4 @@
-# Qwen3-0.6B LoRA Training on CPU
+# Qwen3.5-0.8B LoRA Training on CPU
 
 This is the first practical Qwen fine-tuning experiment. It freezes the base
 weights and trains small LoRA matrices on the query and value projections.
@@ -6,6 +6,12 @@ weights and trains small LoRA matrices on the query and value projections.
 Expected reality: a short run on 50–100 examples can still take a long time on
 four CPU cores. Begin with one epoch and 256 tokens. Do not increase dataset
 size, sequence length, rank, and epochs at the same time.
+
+
+This recipe is intentionally **text-only LoRA on the language backbone**. The
+vision encoder remains frozen. Multimodal fine-tuning needs paired image-text
+data and a pixel-aware collator; see [Multimodal inference](10-multimodal-inference.md)
+before designing that separate experiment.
 
 ## 1. Preflight
 
@@ -40,11 +46,12 @@ Use deterministic generation for classification comparisons:
 
 ```python
 import torch
-from transformers import AutoModelForCausalLM, AutoTokenizer
+from transformers import AutoModelForMultimodalLM, AutoProcessor
 
-model_id = "Qwen/Qwen3-0.6B"
-tokenizer = AutoTokenizer.from_pretrained(model_id)
-model = AutoModelForCausalLM.from_pretrained(
+model_id = "Qwen/Qwen3.5-0.8B"
+processor = AutoProcessor.from_pretrained(model_id)
+tokenizer = processor.tokenizer
+model = AutoModelForMultimodalLM.from_pretrained(
     model_id,
     dtype=torch.float32,
     low_cpu_mem_usage=True,
@@ -55,7 +62,7 @@ messages = [
     {"role": "system", "content": "Classify the request. Return JSON only."},
     {"role": "user", "content": "Remind me tomorrow at 8 AM to back up the server."},
 ]
-prompt = tokenizer.apply_chat_template(
+prompt = processor.apply_chat_template(
     messages,
     tokenize=False,
     add_generation_prompt=True,
@@ -74,12 +81,13 @@ Before applying LoRA, verify the module names instead of assuming them:
 
 ```python
 for name, module in model.named_modules():
-    if name.endswith(("q_proj", "v_proj")):
+    if ".language_model." in name and name.endswith(("q_proj", "v_proj")):
         print(name, type(module).__name__)
 ```
 
-If this prints no modules, stop and inspect the installed model architecture and
-PEFT documentation. Do not silently train zero or unintended parameters.
+If this prints no language-backbone modules, stop and inspect the installed model
+architecture and PEFT documentation. Do not silently adapt the vision tower or
+train zero parameters.
 
 ## 4. First LoRA script
 
@@ -95,12 +103,12 @@ from pathlib import Path
 import torch
 from datasets import load_dataset
 from peft import LoraConfig, TaskType
-from transformers import AutoModelForCausalLM, AutoTokenizer, set_seed
+from transformers import AutoModelForMultimodalLM, AutoProcessor, set_seed
 from trl import SFTConfig, SFTTrainer
 
-MODEL_ID = "Qwen/Qwen3-0.6B"
+MODEL_ID = "Qwen/Qwen3.5-0.8B"
 DATASET_DIR = Path("/opt/data/llm-studio/datasets/hermes-intent-v1")
-RUN_ID = os.environ.get("RUN_ID", time.strftime("qwen3-lora-%Y%m%dT%H%M%SZ", time.gmtime()))
+RUN_ID = os.environ.get("RUN_ID", time.strftime("qwen35-lora-%Y%m%dT%H%M%SZ", time.gmtime()))
 OUTPUT_DIR = Path("/opt/data/llm-studio/checkpoints") / RUN_ID
 THREADS = int(os.environ.get("LLM_STUDIO_CPU_THREADS", "3"))
 
@@ -116,8 +124,9 @@ dataset = load_dataset(
     },
 )
 
-tokenizer = AutoTokenizer.from_pretrained(MODEL_ID)
-model = AutoModelForCausalLM.from_pretrained(
+processor = AutoProcessor.from_pretrained(MODEL_ID)
+tokenizer = processor.tokenizer
+model = AutoModelForMultimodalLM.from_pretrained(
     MODEL_ID,
     dtype=torch.float32,
     low_cpu_mem_usage=True,
@@ -126,10 +135,10 @@ model.config.use_cache = False
 
 targets = [
     name for name, _ in model.named_modules()
-    if name.endswith(("q_proj", "v_proj"))
+    if ".language_model." in name and name.endswith(("q_proj", "v_proj"))
 ]
 if not targets:
-    raise RuntimeError("No q_proj/v_proj modules found; do not start training")
+    raise RuntimeError("No language-model q_proj/v_proj modules found; do not start training")
 
 lora = LoraConfig(
     task_type=TaskType.CAUSAL_LM,
@@ -137,7 +146,7 @@ lora = LoraConfig(
     lora_alpha=16,
     lora_dropout=0.05,
     bias="none",
-    target_modules=["q_proj", "v_proj"],
+    target_modules=targets,
 )
 
 config = SFTConfig(
@@ -191,7 +200,7 @@ resume = os.environ.get("RESUME_FROM") or None
 trainer.train(resume_from_checkpoint=resume)
 metrics = trainer.evaluate()
 trainer.save_model(str(OUTPUT_DIR / "adapter-final"))
-tokenizer.save_pretrained(str(OUTPUT_DIR / "adapter-final"))
+processor.save_pretrained(str(OUTPUT_DIR / "adapter-final"))
 (OUTPUT_DIR / "final-metrics.json").write_text(
     json.dumps(metrics, indent=2), encoding="utf-8"
 )
@@ -212,7 +221,7 @@ Why these defaults:
 ## 5. Run and monitor
 
 ```bash
-export RUN_ID=qwen3-lora-001
+export RUN_ID=qwen35-lora-001
 set -o pipefail
 time python /opt/data/llm-studio/training/train_lora.py \
   2>&1 | tee "/opt/data/llm-studio/logs/${RUN_ID}.log"
@@ -237,13 +246,14 @@ stop: LoRA was not applied as intended.
 ```python
 import torch
 from peft import PeftModel
-from transformers import AutoModelForCausalLM, AutoTokenizer
+from transformers import AutoModelForMultimodalLM, AutoProcessor
 
-base_id = "Qwen/Qwen3-0.6B"
-adapter_path = "/opt/data/llm-studio/checkpoints/qwen3-lora-001/adapter-final"
+base_id = "Qwen/Qwen3.5-0.8B"
+adapter_path = "/opt/data/llm-studio/checkpoints/qwen35-lora-001/adapter-final"
 
-tokenizer = AutoTokenizer.from_pretrained(adapter_path)
-base = AutoModelForCausalLM.from_pretrained(
+processor = AutoProcessor.from_pretrained(adapter_path)
+tokenizer = processor.tokenizer
+base = AutoModelForMultimodalLM.from_pretrained(
     base_id,
     dtype=torch.float32,
     low_cpu_mem_usage=True,

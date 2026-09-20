@@ -7,7 +7,7 @@ on examples that were not used for parameter updates?
 
 At minimum compare:
 
-1. base `Qwen/Qwen3-0.6B`;
+1. base `Qwen/Qwen3.5-0.8B`;
 2. base model plus the LoRA adapter;
 3. an explicit trivial baseline, such as always predicting the most frequent
    training label.
@@ -113,7 +113,7 @@ only a percentage with two decimal places.
 Create one directory per immutable run:
 
 ```text
-/opt/data/llm-studio/experiments/qwen3-lora-001/
+/opt/data/llm-studio/experiments/qwen35-lora-001/
 ├── hypothesis.md
 ├── config.json
 ├── dataset-SHA256SUMS

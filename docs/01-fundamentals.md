@@ -51,7 +51,7 @@ uses those gradients and the learning rate to change the parameters.
 - **Validation loss:** fit on held-out examples. A rising validation loss while
   training loss falls is a common overfitting signal.
 
-## Why not pretrain Qwen3-0.6B from scratch here?
+## Why not pretrain Qwen3.5-0.8B from scratch here?
 
 Pretraining a useful foundation model requires a very large token corpus and a
 large amount of accelerator compute. Four CPU cores are suitable for observing
@@ -63,7 +63,7 @@ Use this VPS for:
 
 - tokenizer and data experiments;
 - a tiny from-scratch model that teaches the algorithm;
-- short Qwen3-0.6B LoRA runs on 20–100 examples;
+- short Qwen3.5-0.8B LoRA runs on 20–100 examples;
 - deterministic evaluation and checkpoint practice;
 - RAG experiments where model weights stay unchanged.
 

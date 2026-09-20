@@ -113,7 +113,7 @@ trap 'rm -f -- "${env_tmp:-}"' EXIT
   printf 'LLM_STUDIO_API_KEY=%s\n' "${api_key}"
   printf 'LLM_STUDIO_APP_UID=%s\n' "${app_uid}"
   printf 'LLM_STUDIO_APP_GID=%s\n' "${app_gid}"
-  printf 'MODEL_ID=%s\n' "$(env_value MODEL_ID Qwen/Qwen3-0.6B)"
+  printf 'MODEL_ID=%s\n' "$(env_value MODEL_ID Qwen/Qwen3.5-0.8B)"
   printf 'MODEL_REVISION=%s\n' "$(env_value MODEL_REVISION main)"
   printf 'MODEL_MAX_INPUT_TOKENS=%s\n' "$(env_value MODEL_MAX_INPUT_TOKENS 2048)"
   printf 'MODEL_MAX_NEW_TOKENS=%s\n' "$(env_value MODEL_MAX_NEW_TOKENS 512)"
@@ -158,5 +158,5 @@ done
 log 'Setup complete.'
 printf 'Base URL: http://%s:%s/v1\n' "${bind_address}" "${port}"
 printf 'API key: stored in %s (mode 0600; value not printed)\n' "${ENV_FILE}"
-printf 'Model: %s (downloaded lazily on the first chat request)\n' "$(env_value MODEL_ID Qwen/Qwen3-0.6B)"
+printf 'Model: %s (downloaded lazily on the first chat request)\n' "$(env_value MODEL_ID Qwen/Qwen3.5-0.8B)"
 printf 'Environment report: %s\n' "${PROJECT_ROOT}/docs/environment.md"

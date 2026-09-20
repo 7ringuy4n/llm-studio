@@ -109,7 +109,8 @@ Install a known package set:
 ```bash
 python -m pip install \
   --extra-index-url https://download.pytorch.org/whl/cpu \
-  'torch==2.7.1+cpu'
+  'torch==2.7.1+cpu' \
+  'torchvision==0.22.1+cpu'
 ```
 
 ```bash
@@ -119,6 +120,7 @@ python -m pip install \
   'peft==0.21.0' \
   'trl==1.13.0' \
   'accelerate==1.15.0' \
+  'pillow==11.3.0' \
   sentencepiece
 ```
 

@@ -121,5 +121,5 @@ incoherent because a bigram model has only one-character context.
 - What does `loss.backward()` create?
 - Why clear gradients before the next step?
 - Which checkpoint fields are needed to continue training?
-- Why is this exercise not equivalent to pretraining Qwen3-0.6B?
+- Why is this exercise not equivalent to pretraining Qwen3.5-0.8B?
 
