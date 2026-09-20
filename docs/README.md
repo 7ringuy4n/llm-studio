@@ -2,7 +2,7 @@
 
 This handbook is the learning path for training and evaluating models in the
 LLM Studio. It targets Ubuntu, 4 vCPU, 16 GB RAM, no GPU, and the official
-`Qwen/Qwen3-0.6B` model.
+`Qwen/Qwen3.5-0.8B` model.
 
 Read the guides in this order:
 
@@ -16,7 +16,7 @@ Read the guides in this order:
    truncation, and chat templates before training.
 5. [Tiny model from scratch](05-tiny-model-from-scratch.md) — learn the complete
    forward/loss/backward/update loop without pretending to pretrain Qwen.
-6. [Qwen3 LoRA training](06-qwen3-lora-training.md) — the first practical
+6. [Qwen3.5 LoRA training](06-qwen35-lora-training.md) — the first practical
    adapter training run on CPU.
 7. [Evaluation and experiments](07-evaluation-and-experiments.md) — compare the
    base model and adapter with held-out data and reproducible metrics.
@@ -24,12 +24,14 @@ Read the guides in this order:
    retain, and back up experiments.
 9. [Troubleshooting](09-troubleshooting.md) — diagnose memory, speed, package,
    data, and quality failures.
+10. [Multimodal inference](10-multimodal-inference.md) — send safe embedded
+    images, design vision prompts, and understand the text-only training boundary.
 
 The generated VPS inventory remains in [environment.md](environment.md).
 
 ## Recommended first milestone
 
-Teach Qwen3-0.6B a narrow classification task:
+Teach Qwen3.5-0.8B a narrow classification task:
 
 ```text
 Input:  "Remind me tomorrow at 8 AM to back up the server."
@@ -50,7 +52,7 @@ Stop the API before a training run so both workloads do not compete for memory.
 
 ## Official references
 
-- [Qwen3-0.6B model repository](https://huggingface.co/Qwen/Qwen3-0.6B)
+- [Qwen3.5-0.8B model repository](https://huggingface.co/Qwen/Qwen3.5-0.8B)
 - [TRL SFTTrainer](https://huggingface.co/docs/trl/sft_trainer)
 - [TRL dataset formats](https://huggingface.co/docs/trl/dataset_formats)
 - [PEFT LoRA configuration](https://huggingface.co/docs/peft/en/package_reference/lora)

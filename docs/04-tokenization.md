@@ -15,10 +15,11 @@ export HF_DATASETS_CACHE="${LLM_STUDIO_ROOT}/datasets/cache"
 ## Inspect one conversation
 
 ```python
-from transformers import AutoTokenizer
+from transformers import AutoProcessor
 
-model_id = "Qwen/Qwen3-0.6B"
-tokenizer = AutoTokenizer.from_pretrained(model_id)
+model_id = "Qwen/Qwen3.5-0.8B"
+processor = AutoProcessor.from_pretrained(model_id)
+tokenizer = processor.tokenizer
 
 messages = [
     {"role": "system", "content": "Classify the request. Return JSON only."},
@@ -26,7 +27,7 @@ messages = [
     {"role": "assistant", "content": '{"task_type":"create_schedule"}'},
 ]
 
-rendered = tokenizer.apply_chat_template(
+rendered = processor.apply_chat_template(
     messages,
     tokenize=False,
     add_generation_prompt=False,
@@ -54,20 +55,27 @@ Observe:
 Do not manually add Qwen control tokens. Let the model tokenizer render the
 conversation so training and inference use the same format.
 
+
+Qwen3.5 is multimodal, so its chat template lives on the processor. For a
+vision request, the processor also returns `pixel_values` and image-grid
+metadata. Measure visual-token cost separately from the text-only dataset; do
+not mix images into this first classification baseline.
+
 ## Measure the whole dataset
 
 ```python
 from datasets import load_dataset
-from transformers import AutoTokenizer
+from transformers import AutoProcessor
 
-model_id = "Qwen/Qwen3-0.6B"
+model_id = "Qwen/Qwen3.5-0.8B"
 data_file = "/opt/data/llm-studio/datasets/hermes-intent-v1/train.jsonl"
-tokenizer = AutoTokenizer.from_pretrained(model_id)
+processor = AutoProcessor.from_pretrained(model_id)
+tokenizer = processor.tokenizer
 dataset = load_dataset("json", data_files=data_file, split="train")
 
 lengths = []
 for row in dataset:
-    token_ids = tokenizer.apply_chat_template(
+    token_ids = processor.apply_chat_template(
         row["messages"],
         tokenize=True,
         add_generation_prompt=False,

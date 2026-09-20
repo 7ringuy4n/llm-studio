@@ -17,7 +17,7 @@ from .schemas import ChatCompletionRequest
 from .security import require_api_key
 from .settings import settings
 
-MAX_REQUEST_BYTES = 64 * 1024
+MAX_REQUEST_BYTES = 4 * 1024 * 1024
 logger = logging.getLogger("llm_studio_api")
 logging.basicConfig(level=logging.INFO, format="%(message)s")
 generation_slots = asyncio.Semaphore(settings.max_concurrent_requests)
@@ -31,7 +31,7 @@ async def lifespan(_: FastAPI):
 
 
 app = FastAPI(
-    title="LLM Studio Qwen API",
+    title="LLM Studio Qwen3.5 Multimodal API",
     version="1.0.0",
     docs_url=None,
     redoc_url=None,
@@ -151,7 +151,7 @@ async def chat_completions(
     request: ChatCompletionRequest,
     _: str = Depends(require_api_key),
 ):
-    if request.model not in {settings.model_id, "qwen3-0.6b"}:
+    if request.model not in {settings.model_id, "qwen3.5-0.8b"}:
         raise HTTPException(status_code=404, detail="Requested model is not available")
     if request.max_tokens and request.max_tokens > settings.max_new_tokens:
         raise HTTPException(

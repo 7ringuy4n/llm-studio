@@ -28,15 +28,15 @@ after eight micro-batches, not after every example.
 List available checkpoints:
 
 ```bash
-find /opt/data/llm-studio/checkpoints/qwen3-lora-001 \
+find /opt/data/llm-studio/checkpoints/qwen35-lora-001 \
   -maxdepth 1 -type d -name 'checkpoint-*' -printf '%f\n' | sort -V
 ```
 
 Resume by passing a specific directory:
 
 ```bash
-export RUN_ID=qwen3-lora-001
-export RESUME_FROM=/opt/data/llm-studio/checkpoints/qwen3-lora-001/checkpoint-10
+export RUN_ID=qwen35-lora-001
+export RESUME_FROM=/opt/data/llm-studio/checkpoints/qwen35-lora-001/checkpoint-10
 python /opt/data/llm-studio/training/train_lora.py
 ```
 
@@ -47,7 +47,7 @@ or invalidate the experiment.
 ## Verify artifacts
 
 ```bash
-cd /opt/data/llm-studio/checkpoints/qwen3-lora-001
+cd /opt/data/llm-studio/checkpoints/qwen35-lora-001
 find . -type f -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS
 sha256sum --check SHA256SUMS
 ```
@@ -56,7 +56,7 @@ Inspect the adapter configuration before loading it:
 
 ```bash
 python -m json.tool \
-  /opt/data/llm-studio/checkpoints/qwen3-lora-001/adapter-final/adapter_config.json
+  /opt/data/llm-studio/checkpoints/qwen35-lora-001/adapter-final/adapter_config.json
 ```
 
 Confirm the base model reference, task type, rank, alpha, and targeted modules
@@ -68,10 +68,10 @@ Create backups only inside the LLM Studio backup directory, then copy them to an
 approved external destination using an existing administrative process:
 
 ```bash
-backup_name="qwen3-lora-001-$(date -u +%Y%m%dT%H%M%SZ).tar.gz"
+backup_name="qwen35-lora-001-$(date -u +%Y%m%dT%H%M%SZ).tar.gz"
 tar -C /opt/data/llm-studio/checkpoints \
   -czf "/opt/data/llm-studio/backups/${backup_name}" \
-  qwen3-lora-001
+  qwen35-lora-001
 sha256sum "/opt/data/llm-studio/backups/${backup_name}" \
   > "/opt/data/llm-studio/backups/${backup_name}.sha256"
 ```
