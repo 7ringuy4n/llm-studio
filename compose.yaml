@@ -1,0 +1,71 @@
+name: llm-studio
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        APP_GID: "${LLM_STUDIO_APP_GID:-10001}"
+        APP_UID: "${LLM_STUDIO_APP_UID:-10001}"
+    image: llm-studio-api:local
+    container_name: llm-studio-api
+    restart: unless-stopped
+    init: true
+    environment:
+      LLM_STUDIO_API_KEY: "${LLM_STUDIO_API_KEY:?LLM_STUDIO_API_KEY is required}"
+      LLM_STUDIO_CPU_THREADS: "${LLM_STUDIO_CPU_THREADS:-3}"
+      LLM_STUDIO_MAX_CONCURRENT_REQUESTS: "${LLM_STUDIO_MAX_CONCURRENT_REQUESTS:-1}"
+      LLM_STUDIO_RATE_LIMIT_PER_MINUTE: "${LLM_STUDIO_RATE_LIMIT_PER_MINUTE:-30}"
+      LLM_STUDIO_REQUEST_TIMEOUT_SECONDS: "${LLM_STUDIO_REQUEST_TIMEOUT_SECONDS:-180}"
+      HF_HOME: /data/models/huggingface
+      MODEL_ID: "${MODEL_ID:-Qwen/Qwen3-0.6B}"
+      MODEL_LOAD_ON_START: "${MODEL_LOAD_ON_START:-false}"
+      MODEL_MAX_INPUT_TOKENS: "${MODEL_MAX_INPUT_TOKENS:-2048}"
+      MODEL_MAX_NEW_TOKENS: "${MODEL_MAX_NEW_TOKENS:-512}"
+      MODEL_REVISION: "${MODEL_REVISION:-main}"
+    ports:
+      - "${LLM_STUDIO_BIND_ADDRESS:-127.0.0.1}:${LLM_STUDIO_PORT:-18080}:8000"
+    volumes:
+      - type: bind
+        source: "${LLM_STUDIO_DATA_DIR:-/opt/data/llm-studio}/models"
+        target: /data/models
+      - type: bind
+        source: "${LLM_STUDIO_DATA_DIR:-/opt/data/llm-studio}/logs"
+        target: /data/logs
+    networks:
+      - llm-studio-net
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=256m,mode=1777
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 256
+    mem_limit: 8g
+    mem_reservation: 4g
+    cpus: 3.0
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=3)"
+      interval: 15s
+      timeout: 5s
+      retries: 8
+      start_period: 30s
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"
+
+networks:
+  llm-studio-net:
+    name: llm-studio-net
+    driver: bridge
+    labels:
+      llm.studio.owner: llm-studio
+      llm.studio.hermes-access: "none"

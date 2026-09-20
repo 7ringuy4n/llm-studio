@@ -1,0 +1,105 @@
+{
+  "info": {
+    "_postman_id": "d887d4c8-e061-4f93-9d8f-e5ab75879a49",
+    "name": "LLM Studio - Qwen3 0.6B",
+    "description": "OpenAI-compatible, API-key-protected requests for the VPN-only LLM Studio service.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [{ "key": "token", "value": "{{apiKey}}", "type": "string" }]
+  },
+  "event": [{
+    "listen": "test",
+    "script": {
+      "type": "text/javascript",
+      "exec": [
+        "pm.test('X-Request-ID is present', () => pm.expect(pm.response.headers.get('X-Request-ID')).to.be.ok);",
+        "pm.test('Responses are not cached', () => pm.expect(pm.response.headers.get('Cache-Control')).to.eql('no-store'));",
+        "pm.test('MIME sniffing is disabled', () => pm.expect(pm.response.headers.get('X-Content-Type-Options')).to.eql('nosniff'));"
+      ]
+    }
+  }],
+  "item": [
+    {
+      "name": "Service",
+      "item": [{
+        "name": "Health",
+        "request": { "auth": { "type": "noauth" }, "method": "GET", "url": "{{baseUrl}}/health" },
+        "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+          "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+          "pm.test('Service is healthy', () => pm.expect(pm.response.json().status).to.eql('ok'));"
+        ] } }]
+      }]
+    },
+    {
+      "name": "OpenAI-compatible API",
+      "item": [
+        {
+          "name": "List Models",
+          "request": { "method": "GET", "url": "{{baseUrl}}/v1/models" },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+            "pm.test('Configured model is listed', () => pm.expect(pm.response.json().data[0].id).to.eql(pm.environment.get('model')));"
+          ] } }]
+        },
+        {
+          "name": "Chat Completion",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"model\": \"{{model}}\",\n  \"messages\": [\n    {\"role\": \"system\", \"content\": \"Answer concisely.\"},\n    {\"role\": \"user\", \"content\": \"Reply with exactly: LLM Studio is ready\"}\n  ],\n  \"max_tokens\": 32,\n  \"temperature\": 0,\n  \"stream\": false\n}" },
+            "url": "{{baseUrl}}/v1/chat/completions"
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+            "pm.test('OpenAI response shape is valid', () => { const b = pm.response.json(); pm.expect(b.object).to.eql('chat.completion'); pm.expect(b.choices[0].message.role).to.eql('assistant'); pm.expect(b.usage.total_tokens).to.be.a('number'); });"
+          ] } }]
+        },
+        {
+          "name": "Streaming Chat Completion",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"model\": \"{{model}}\",\n  \"messages\": [{\"role\": \"user\", \"content\": \"Say hello in one short sentence.\"}],\n  \"max_tokens\": 24,\n  \"temperature\": 0,\n  \"stream\": true\n}" },
+            "url": "{{baseUrl}}/v1/chat/completions"
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+            "pm.test('SSE stream terminates', () => pm.expect(pm.response.text()).to.include('data: [DONE]'));"
+          ] } }]
+        }
+      ]
+    },
+    {
+      "name": "Security and validation",
+      "item": [
+        {
+          "name": "Reject Missing API Key",
+          "request": { "auth": { "type": "noauth" }, "method": "GET", "url": "{{baseUrl}}/v1/models" },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status is 401', () => pm.response.to.have.status(401));"] } }]
+        },
+        {
+          "name": "Reject Unknown Model",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"model\": \"unknown/model\",\n  \"messages\": [{\"role\": \"user\", \"content\": \"Hello\"}],\n  \"max_tokens\": 8\n}" },
+            "url": "{{baseUrl}}/v1/chat/completions"
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status is 404', () => pm.response.to.have.status(404));"] } }]
+        },
+        {
+          "name": "Reject Excessive max_tokens",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"model\": \"{{model}}\",\n  \"messages\": [{\"role\": \"user\", \"content\": \"Hello\"}],\n  \"max_tokens\": 999999\n}" },
+            "url": "{{baseUrl}}/v1/chat/completions"
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status is 400', () => pm.response.to.have.status(400));"] } }]
+        }
+      ]
+    }
+  ]
+}
