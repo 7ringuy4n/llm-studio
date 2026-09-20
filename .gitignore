@@ -1,0 +1,17 @@
+.env
+*.ovpn
+*.local.postman_environment.json
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+
+# Local/runtime artifacts. The VPS uses /opt/data/llm-studio by default.
+models/
+datasets/
+training/
+checkpoints/
+vectorstore/
+logs/
+backups/
+outputs/
