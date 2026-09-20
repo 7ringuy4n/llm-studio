@@ -1,0 +1,61 @@
+# AI Model Training Handbook
+
+This handbook is the learning path for training and evaluating models in the
+LLM Studio. It targets Ubuntu, 4 vCPU, 16 GB RAM, no GPU, and the official
+`Qwen/Qwen3-0.6B` model.
+
+Read the guides in this order:
+
+1. [Fundamentals](01-fundamentals.md) — what training changes and how it differs
+   from fine-tuning, LoRA, quantization, and RAG.
+2. [Environment and safety](02-environment-and-safety.md) — protect Hermes and
+   keep CPU, RAM, disk, and networking isolated.
+3. [Dataset preparation](03-dataset-preparation.md) — design, validate, split,
+   and version conversational JSONL data.
+4. [Tokenization laboratory](04-tokenization.md) — inspect Qwen tokens, masks,
+   truncation, and chat templates before training.
+5. [Tiny model from scratch](05-tiny-model-from-scratch.md) — learn the complete
+   forward/loss/backward/update loop without pretending to pretrain Qwen.
+6. [Qwen3 LoRA training](06-qwen3-lora-training.md) — the first practical
+   adapter training run on CPU.
+7. [Evaluation and experiments](07-evaluation-and-experiments.md) — compare the
+   base model and adapter with held-out data and reproducible metrics.
+8. [Checkpoints and recovery](08-checkpoints-and-recovery.md) — resume, inspect,
+   retain, and back up experiments.
+9. [Troubleshooting](09-troubleshooting.md) — diagnose memory, speed, package,
+   data, and quality failures.
+
+The generated VPS inventory remains in [environment.md](environment.md).
+
+## Recommended first milestone
+
+Teach Qwen3-0.6B a narrow classification task:
+
+```text
+Input:  "Remind me tomorrow at 8 AM to back up the server."
+Output: {"task_type":"create_schedule"}
+```
+
+Success means the held-out classification accuracy improves over the base
+model, the output is valid JSON more often, and the result can be reproduced
+from a recorded dataset version and configuration. Lower training loss alone is
+not success.
+
+## Current implementation boundary
+
+The repository currently contains the secure inference API and setup layer. The
+commands in these guides create a separate Python training environment under
+`/opt/data/llm-studio/training`; they do not modify the API container or Hermes.
+Stop the API before a training run so both workloads do not compete for memory.
+
+## Official references
+
+- [Qwen3-0.6B model repository](https://huggingface.co/Qwen/Qwen3-0.6B)
+- [TRL SFTTrainer](https://huggingface.co/docs/trl/sft_trainer)
+- [TRL dataset formats](https://huggingface.co/docs/trl/dataset_formats)
+- [PEFT LoRA configuration](https://huggingface.co/docs/peft/en/package_reference/lora)
+- [PEFT quantization guide](https://huggingface.co/docs/peft/developer_guides/quantization)
+
+The training package versions in this handbook were selected on 2026-09-20.
+Record installed versions for every experiment because these APIs evolve.
+

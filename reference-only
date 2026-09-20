@@ -1,0 +1,943 @@
+# Qwen3-0.6B — First LLM Fine-Tuning Setup
+
+## 1. Goal
+
+This project is a first practical LLM training/fine-tuning environment using:
+
+* **Model:** Qwen3-0.6B
+* **Hardware:** 4 vCPU / 16 GB RAM
+* **GPU:** None
+* **OS:** Ubuntu Linux
+* **Training:** CPU
+* **Primary method:** LoRA / PEFT
+* **Optional learning exercise:** Full fine-tuning
+* **Framework:** PyTorch + Hugging Face Transformers + PEFT + TRL
+* **Dataset:** Small local JSONL dataset
+
+The purpose is to learn the complete LLM fine-tuning workflow rather than optimize production performance.
+
+---
+
+## 2. Hardware Target
+
+Recommended minimum:
+
+```text
+CPU:       4 vCPU
+RAM:       16 GB
+GPU:       None
+Disk:      20+ GB free
+OS:        Ubuntu 22.04 / 24.04
+Python:    3.11
+```
+
+Recommended disk layout:
+
+```text
+qwen3-training/
+├── .venv/
+├── data/
+├── models/
+├── outputs/
+├── scripts/
+├── evaluation/
+└── README.md
+```
+
+Keep at least 10 GB of free disk space after installing the model and Python packages.
+
+---
+
+# 3. Why Qwen3-0.6B
+
+Qwen3-0.6B is small enough to make CPU-based experimentation practical.
+
+Approximate scale:
+
+```text
+Parameters: ~600M
+```
+
+This makes it useful for learning:
+
+* tokenization
+* datasets
+* supervised fine-tuning
+* LoRA
+* QLoRA concepts
+* loss
+* epochs
+* batch size
+* gradient accumulation
+* evaluation
+* checkpointing
+* inference
+* model export
+
+Do not expect CPU training to be fast. The purpose of this machine is experimentation and learning.
+
+---
+
+# 4. First Training Strategy
+
+Do not immediately build a complicated training pipeline.
+
+Use this progression:
+
+```text
+Phase 1
+-------
+Load base model
+        ↓
+Run inference
+        ↓
+Understand tokenizer/model
+```
+
+```text
+Phase 2
+-------
+Create tiny dataset
+        ↓
+Supervised fine-tuning
+        ↓
+Evaluate
+```
+
+```text
+Phase 3
+-------
+LoRA fine-tuning
+        ↓
+Compare with base model
+```
+
+```text
+Phase 4
+-------
+Larger dataset
+        ↓
+Validation
+        ↓
+Hyperparameter experiments
+```
+
+Start with **LoRA** as the primary practical approach.
+
+---
+
+# 5. Recommended Python Environment
+
+Create the project:
+
+```bash
+mkdir -p ~/qwen3-training
+cd ~/qwen3-training
+```
+
+Create a virtual environment:
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+```
+
+Upgrade pip:
+
+```bash
+pip install --upgrade pip setuptools wheel
+```
+
+Install the basic packages:
+
+```bash
+pip install torch
+pip install transformers
+pip install datasets
+pip install peft
+pip install accelerate
+pip install trl
+pip install sentencepiece
+```
+
+Verify:
+
+```bash
+python - <<'PY'
+import torch
+import transformers
+import datasets
+import peft
+import accelerate
+import trl
+
+print("PyTorch:", torch.__version__)
+print("Transformers:", transformers.__version__)
+print("Datasets:", datasets.__version__)
+print("PEFT:", peft.__version__)
+print("Accelerate:", accelerate.__version__)
+print("TRL:", trl.__version__)
+print("CUDA available:", torch.cuda.is_available())
+PY
+```
+
+Expected:
+
+```text
+CUDA available: False
+```
+
+That is normal for the CPU-only machine.
+
+---
+
+# 6. Project Structure
+
+Use:
+
+```text
+qwen3-training/
+│
+├── .venv/
+│
+├── data/
+│   ├── train.jsonl
+│   └── validation.jsonl
+│
+├── models/
+│
+├── outputs/
+│
+├── scripts/
+│   ├── download_model.py
+│   ├── train_lora.py
+│   ├── evaluate.py
+│   └── inference.py
+│
+├── evaluation/
+│
+└── README.md
+```
+
+Keep training data separate from model outputs.
+
+---
+
+# 7. Download the Model
+
+Use Hugging Face Transformers.
+
+The model identifier is:
+
+```text
+Qwen/Qwen3-0.6B
+```
+
+Download/cache it by running:
+
+```python
+from transformers import AutoTokenizer, AutoModelForCausalLM
+
+model_name = "Qwen/Qwen3-0.6B"
+
+tokenizer = AutoTokenizer.from_pretrained(model_name)
+
+model = AutoModelForCausalLM.from_pretrained(
+    model_name
+)
+
+print("Model loaded successfully")
+```
+
+Save this as:
+
+```text
+scripts/download_model.py
+```
+
+Run:
+
+```bash
+python scripts/download_model.py
+```
+
+The model will normally be cached under the Hugging Face cache directory.
+
+---
+
+# 8. First Inference Test
+
+Before training anything, verify the base model.
+
+Create:
+
+```text
+scripts/inference.py
+```
+
+Basic workflow:
+
+```python
+from transformers import AutoTokenizer, AutoModelForCausalLM
+
+MODEL = "Qwen/Qwen3-0.6B"
+
+tokenizer = AutoTokenizer.from_pretrained(MODEL)
+
+model = AutoModelForCausalLM.from_pretrained(
+    MODEL
+)
+
+prompt = "Explain what an API is in simple terms."
+
+inputs = tokenizer(
+    prompt,
+    return_tensors="pt"
+)
+
+outputs = model.generate(
+    **inputs,
+    max_new_tokens=100
+)
+
+answer = tokenizer.decode(
+    outputs[0],
+    skip_special_tokens=True
+)
+
+print(answer)
+```
+
+Run:
+
+```bash
+python scripts/inference.py
+```
+
+This confirms that:
+
+```text
+Python
+  ↓
+Transformers
+  ↓
+Tokenizer
+  ↓
+Qwen3-0.6B
+  ↓
+Generation
+```
+
+works before introducing training.
+
+---
+
+# 9. First Dataset
+
+For the first experiment, keep the dataset extremely small.
+
+Example:
+
+```text
+data/train.jsonl
+```
+
+```json
+{"instruction":"What is Linux?","response":"Linux is an open-source operating system kernel used by many operating systems and servers."}
+{"instruction":"What is Docker?","response":"Docker is a container platform used to package and run applications in isolated environments."}
+{"instruction":"What is an API?","response":"An API is an interface that allows software applications to communicate with each other."}
+{"instruction":"What is RAM?","response":"RAM is temporary computer memory used to hold data and programs that are actively being used."}
+```
+
+Start with approximately:
+
+```text
+20–100 examples
+```
+
+for the first successful training run.
+
+Do not start with thousands of examples.
+
+The first goal is:
+
+```text
+Can I successfully train the model?
+```
+
+---
+
+# 10. Better Dataset Format
+
+For instruction tuning, use a consistent structure.
+
+Recommended:
+
+```json
+{
+  "instruction": "...",
+  "input": "...",
+  "response": "..."
+}
+```
+
+For example:
+
+```json
+{
+  "instruction": "Classify the user's request.",
+  "input": "Remind me tomorrow at 8 AM to backup the server.",
+  "response": "{\"task_type\":\"create_schedule\"}"
+}
+```
+
+This format is particularly useful later for Hermes.
+
+---
+
+# 11. Hermes Training Dataset
+
+A useful future training task is teaching Qwen3-0.6B to classify Hermes requests.
+
+Example:
+
+```json
+{"instruction":"Classify the task.","input":"Remind me tomorrow at 8 AM to backup the server.","response":"{\"task_type\":\"create_schedule\"}"}
+{"instruction":"Classify the task.","input":"Search the latest Ubuntu release.","response":"{\"task_type\":\"search\"}"}
+{"instruction":"Classify the task.","input":"Write Python code to parse this JSON file.","response":"{\"task_type\":\"coding\"}"}
+{"instruction":"Classify the task.","input":"Summarize this document.","response":"{\"task_type\":\"knowledge\"}"}
+{"instruction":"Classify the task.","input":"Generate an image of a mountain.","response":"{\"task_type\":\"media_generation\"}"}
+```
+
+Later expand this into:
+
+```text
+normal
+schedule
+coding
+tool
+search
+file
+knowledge
+unknown
+```
+
+This gives the training project a concrete application.
+
+---
+
+# 12. LoRA
+
+LoRA means:
+
+```text
+Low-Rank Adaptation
+```
+
+Instead of changing every parameter:
+
+```text
+Base model
+600M parameters
+       ↓
+all parameters trainable
+```
+
+LoRA keeps the base model mostly frozen:
+
+```text
+Qwen3-0.6B
+     │
+     ├── Base weights
+     │      frozen
+     │
+     └── LoRA adapters
+            trainable
+```
+
+This significantly reduces the amount of trainable parameters and memory required.
+
+---
+
+# 13. Initial Training Configuration
+
+Start conservatively:
+
+```text
+Training method:      LoRA
+Precision:            CPU-compatible
+Sequence length:      512
+Batch size:           1
+Gradient accumulation: 8
+Learning rate:        ~1e-4
+Epochs:               1–3
+Checkpointing:        enabled
+Evaluation:           enabled
+```
+
+Do not optimize these values initially.
+
+The first goal is reproducibility.
+
+---
+
+# 14. CPU Configuration
+
+Use all four CPUs carefully.
+
+For example:
+
+```bash
+export OMP_NUM_THREADS=4
+export MKL_NUM_THREADS=4
+```
+
+Then:
+
+```bash
+python scripts/train_lora.py
+```
+
+Monitor RAM:
+
+```bash
+free -h
+```
+
+Monitor CPU:
+
+```bash
+htop
+```
+
+If the machine becomes unresponsive, reduce the number of threads.
+
+For example:
+
+```bash
+export OMP_NUM_THREADS=3
+export MKL_NUM_THREADS=3
+```
+
+---
+
+# 15. Training Output
+
+Store training results separately:
+
+```text
+outputs/
+└── qwen3-0.6b-hermes-lora/
+    ├── adapter_config.json
+    ├── adapter_model.safetensors
+    ├── tokenizer_config.json
+    └── ...
+```
+
+Do not overwrite the original model.
+
+Keep:
+
+```text
+base model
+    +
+adapter
+```
+
+separate.
+
+This makes experiments easier to compare.
+
+---
+
+# 16. Evaluation
+
+Never judge the model only from training loss.
+
+Keep a separate:
+
+```text
+data/validation.jsonl
+```
+
+Example:
+
+```json
+{"instruction":"Classify the task.","input":"Set a reminder for 6 PM.","response":"{\"task_type\":\"create_schedule\"}"}
+{"instruction":"Classify the task.","input":"Find information about Docker networking.","response":"{\"task_type\":\"search\"}"}
+```
+
+The validation examples must not be used during training.
+
+Compare:
+
+```text
+Base model
+     ↓
+Validation dataset
+     ↓
+accuracy
+
+Fine-tuned model
+     ↓
+Validation dataset
+     ↓
+accuracy
+```
+
+---
+
+# 17. Important Training Metrics
+
+Understand these before experimenting with hyperparameters.
+
+### Training loss
+
+Generally:
+
+```text
+lower loss
+    ↓
+better fit to training data
+```
+
+But extremely low training loss can indicate overfitting.
+
+### Validation loss
+
+Useful for determining whether the model generalizes.
+
+Example:
+
+```text
+Epoch 1
+train loss: 2.1
+validation loss: 2.3
+
+Epoch 2
+train loss: 1.4
+validation loss: 1.7
+
+Epoch 3
+train loss: 0.8
+validation loss: 2.2
+```
+
+The third epoch may be overfitting.
+
+---
+
+# 18. Experiments to Run
+
+Once the first training run works, experiment systematically.
+
+### Experiment A — Dataset size
+
+```text
+50 examples
+100 examples
+500 examples
+1000 examples
+```
+
+Measure:
+
+```text
+training time
+loss
+validation accuracy
+```
+
+### Experiment B — Learning rate
+
+Try:
+
+```text
+1e-5
+5e-5
+1e-4
+2e-4
+```
+
+### Experiment C — LoRA rank
+
+Try:
+
+```text
+r=4
+r=8
+r=16
+```
+
+### Experiment D — Sequence length
+
+Try:
+
+```text
+256
+512
+1024
+```
+
+Observe RAM and training speed.
+
+---
+
+# 19. Full Fine-Tuning Experiment
+
+After understanding LoRA, optionally try full fine-tuning.
+
+Conceptually:
+
+```text
+LoRA:
+
+600M base parameters
+       ↓
+mostly frozen
+       ↓
+small adapter trained
+
+
+Full fine-tuning:
+
+600M base parameters
+       ↓
+all parameters updated
+```
+
+Full fine-tuning is useful educationally because you can understand the difference between:
+
+```text
+trainable parameters
+```
+
+and:
+
+```text
+total parameters
+```
+
+However, do not start with a large dataset or long context.
+
+---
+
+# 20. Reproducibility
+
+Record every experiment.
+
+Create:
+
+```text
+experiments.csv
+```
+
+Example:
+
+```text
+experiment,model,dataset,epochs,lr,lora_r,seq_len,train_loss,val_loss,time
+001,Qwen3-0.6B,100,1,1e-4,8,512,...,...,...,...
+002,Qwen3-0.6B,100,2,1e-4,8,512,...,...,...,...
+```
+
+Also record:
+
+```text
+CPU
+RAM
+Python version
+PyTorch version
+Transformers version
+dataset version
+git commit
+training parameters
+```
+
+This becomes very useful when comparing experiments.
+
+---
+
+# 21. Git
+
+Initialize the project:
+
+```bash
+git init
+```
+
+Recommended `.gitignore`:
+
+```text
+.venv/
+__pycache__/
+*.pyc
+
+models/
+outputs/
+checkpoints/
+
+.env
+*.log
+```
+
+Do not commit model weights unless intentionally required.
+
+Commit:
+
+```text
+training code
+dataset metadata
+configuration
+README
+evaluation scripts
+experiment results
+```
+
+---
+
+# 22. Recommended Learning Path
+
+Follow this order:
+
+```text
+1. Load Qwen3-0.6B
+        ↓
+2. Run inference
+        ↓
+3. Understand tokenizer
+        ↓
+4. Create JSONL dataset
+        ↓
+5. Train tiny LoRA
+        ↓
+6. Evaluate
+        ↓
+7. Change learning rate
+        ↓
+8. Change LoRA rank
+        ↓
+9. Increase dataset
+        ↓
+10. Compare base vs fine-tuned
+        ↓
+11. Try full fine-tuning
+        ↓
+12. Export model
+        ↓
+13. Run the trained model locally
+```
+
+Do not skip directly to step 10.
+
+Understanding each stage is the main purpose of this project.
+
+---
+
+# 23. Recommended First Milestone
+
+The first milestone should be extremely simple:
+
+```text
+Input:
+"Remind me tomorrow at 8 AM to backup the server."
+
+Base model:
+incorrect / inconsistent classification
+
+        ↓
+
+Fine-tuning
+
+        ↓
+
+Fine-tuned model:
+{"task_type":"create_schedule"}
+```
+
+Once this works reliably, expand the dataset and task taxonomy.
+
+---
+
+# 24. Success Criteria
+
+The first project is successful when you can explain and reproduce:
+
+* What a tokenizer does
+* What model parameters are
+* What training loss means
+* What validation loss means
+* What an epoch is
+* What batch size means
+* What gradient accumulation does
+* What learning rate does
+* What LoRA does
+* What trainable parameters are
+* Why overfitting happens
+* How to evaluate the model
+* How to save a checkpoint
+* How to load the trained adapter
+* How to run inference with the trained model
+
+The goal is **understanding the training process**, not achieving benchmark-leading results.
+
+---
+
+# 25. Final Recommended Configuration
+
+For the first run on the 4 vCPU / 16 GB machine:
+
+```text
+Model:              Qwen3-0.6B
+Hardware:           4 vCPU / 16 GB RAM
+GPU:                None
+Training:           CPU
+Method:             LoRA
+Dataset:            50–100 examples
+Sequence length:    512
+Batch size:         1
+Gradient accumulation: 8
+Epochs:             1
+Learning rate:      1e-4
+LoRA rank:          8
+```
+
+After this successfully completes, increase only **one variable at a time**.
+
+---
+
+# 26. Long-Term Direction
+
+After learning the fundamentals, this project can evolve into:
+
+```text
+Qwen3-0.6B
+     │
+     ├── Hermes classifier
+     ├── Intent classification
+     ├── Structured JSON generation
+     ├── Lightweight local assistant
+     └── CPU fallback model
+```
+
+For Hermes, keep the fine-tuned model specialized rather than trying to make this small model perform every task.
+
+Use larger/cloud models for:
+
+```text
+complex coding
+long reasoning
+large document analysis
+complex tool planning
+```
+
+and Qwen3-0.6B for:
+
+```text
+classification
+routing
+simple structured generation
+lightweight local inference
+```
+
+This gives you both a useful training exercise and a realistic production architecture.
+
