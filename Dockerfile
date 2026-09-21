@@ -14,10 +14,15 @@ RUN groupadd --gid "${APP_GID}" llm-studio \
 WORKDIR /app
 
 COPY requirements.txt /app/requirements.txt
-RUN python -m pip install --upgrade pip \
-    && python -m pip install --requirement /app/requirements.txt
+RUN apt-get update \
+    && apt-get install --yes --no-install-recommends build-essential cmake libgomp1 \
+    && python -m pip install --upgrade pip \
+    && python -m pip install --requirement /app/requirements.txt \
+    && apt-get purge --yes --auto-remove build-essential cmake \
+    && rm -rf /var/lib/apt/lists/*
 
 COPY --chown=${APP_UID}:${APP_GID} api /app/api
+COPY --chown=${APP_UID}:${APP_GID} configs /app/configs
 
 USER ${APP_UID}:${APP_GID}
 

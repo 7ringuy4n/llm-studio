@@ -1,0 +1,87 @@
+extensions:
+  file_storage:
+    directory: /var/lib/otelcol
+
+receivers:
+  file_log/llm_studio_requests:
+    include:
+      - /var/log/llm-studio/requests.jsonl
+      - /var/log/llm-studio/requests.jsonl.*
+    start_at: beginning
+    storage: file_storage
+    operators:
+      - type: json_parser
+        parse_from: body
+  host_metrics:
+    root_path: /hostfs
+    collection_interval: 15s
+    scrapers:
+      cpu: {}
+      load: {}
+      memory: {}
+      network: {}
+      paging: {}
+      processes: {}
+      system: {}
+
+processors:
+  memory_limiter:
+    check_interval: 1s
+    limit_mib: 192
+    spike_limit_mib: 48
+  resource/llm_studio_logs:
+    attributes:
+      - key: service.name
+        value: llm-studio-api
+        action: upsert
+      - key: deployment.environment
+        value: homelab
+        action: upsert
+  resource/llm_studio_host:
+    attributes:
+      - key: service.name
+        value: llm-studio-host
+        action: upsert
+      - key: deployment.environment
+        value: homelab
+        action: upsert
+  batch:
+    timeout: 5s
+    send_batch_size: 512
+
+exporters:
+  otlp_http/openobserve_logs:
+    endpoint: http://openobserve:5080/api/default
+    headers:
+      Authorization: "Basic ${env:OPENOBSERVE_AUTH}"
+      stream-name: llm_studio_requests
+    sending_queue:
+      enabled: true
+      storage: file_storage
+      queue_size: 2048
+    retry_on_failure:
+      enabled: true
+      max_elapsed_time: 300s
+  otlp_http/openobserve_metrics:
+    endpoint: http://openobserve:5080/api/default
+    headers:
+      Authorization: "Basic ${env:OPENOBSERVE_AUTH}"
+    sending_queue:
+      enabled: true
+      storage: file_storage
+      queue_size: 2048
+    retry_on_failure:
+      enabled: true
+      max_elapsed_time: 300s
+
+service:
+  extensions: [file_storage]
+  pipelines:
+    logs:
+      receivers: [file_log/llm_studio_requests]
+      processors: [memory_limiter, resource/llm_studio_logs, batch]
+      exporters: [otlp_http/openobserve_logs]
+    metrics:
+      receivers: [host_metrics]
+      processors: [memory_limiter, resource/llm_studio_host, batch]
+      exporters: [otlp_http/openobserve_metrics]

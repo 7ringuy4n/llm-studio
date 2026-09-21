@@ -26,6 +26,12 @@ Read the guides in this order:
    data, and quality failures.
 10. [Multimodal inference](10-multimodal-inference.md) — send safe embedded
     images, design vision prompts, and understand the text-only training boundary.
+11. [Clean Ubuntu and Traefik setup](11-clean-ubuntu-traefik-setup.md) — install
+    Docker when absent and deploy an isolated proxy without touching Hermes.
+12. [Backup, restore, and migration](12-backup-restore-migration.md) — preserve
+    model caches, datasets, checkpoints, adapters, experiments, and secrets.
+13. [Request tracing and the OpenObserve UI](13-observability.md) — inspect
+    requests, responses, token/cache timing, IDs, IPs, and host resources.
 
 The generated VPS inventory remains in [environment.md](environment.md).
 
@@ -60,4 +66,3 @@ Stop the API before a training run so both workloads do not compete for memory.
 
 The training package versions in this handbook were selected on 2026-09-20.
 Record installed versions for every experiment because these APIs evolve.
-
