@@ -32,11 +32,26 @@ env_value() {
 }
 
 compose() {
-  docker compose \
-    --project-name "${COMPOSE_PROJECT}" \
-    --env-file "${ENV_FILE}" \
-    --file "${COMPOSE_FILE}" \
-    "$@"
+  local traefik_mode observability_enabled
+  traefik_mode="$(env_value LLM_STUDIO_TRAEFIK_MODE local)"
+  observability_enabled="$(env_value LLM_STUDIO_OBSERVABILITY_ENABLED false)"
+  local -a command=(docker compose --project-name "${COMPOSE_PROJECT}" --env-file "${ENV_FILE}" --file "${COMPOSE_FILE}" --profile "${traefik_mode}")
+  if [[ "${observability_enabled}" == true ]]; then
+    command+=(--profile observability)
+  fi
+  "${command[@]}" "$@"
+}
+
+base_url() {
+  local traefik_mode
+  traefik_mode="$(env_value LLM_STUDIO_TRAEFIK_MODE local)"
+  if [[ "${traefik_mode}" == internet ]]; then
+    printf 'https://%s' "$(env_value LLM_STUDIO_PUBLIC_DOMAIN '')"
+  else
+    printf 'http://%s:%s' \
+      "$(env_value LLM_STUDIO_BIND_ADDRESS 127.0.0.1)" \
+      "$(env_value LLM_STUDIO_PORT 18080)"
+  fi
 }
 
 assert_safe_bind_address() {

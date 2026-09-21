@@ -1,0 +1,21 @@
+http:
+  routers:
+    llm-studio-api:
+      rule: "Host(`__LLM_STUDIO_DOMAIN__`) && PathPrefix(`/`)"
+      entryPoints:
+        - websecure
+      service: llm-studio-api
+      priority: 100
+      tls:
+        certResolver: letsencrypt
+
+  services:
+    llm-studio-api:
+      loadBalancer:
+        passHostHeader: true
+        healthCheck:
+          path: /health
+          interval: 15s
+          timeout: 5s
+        servers:
+          - url: "http://api:8000"

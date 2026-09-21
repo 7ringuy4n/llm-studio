@@ -1,7 +1,7 @@
 {
   "info": {
     "_postman_id": "d887d4c8-e061-4f93-9d8f-e5ab75879a49",
-    "name": "LLM Studio - Qwen3.5 0.8B",
+    "name": "LLM Studio - Multi-model",
     "description": "OpenAI-compatible, API-key-protected requests for the VPN-only LLM Studio service.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
@@ -17,11 +17,31 @@
   },
   "event": [
     {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "const sessionId = pm.environment.get('traceSessionId') || `postman-session-${pm.variables.replaceIn('{{$guid}}')}`;",
+          "const correlationId = pm.environment.get('traceCorrelationId') || `postman-corr-${pm.variables.replaceIn('{{$guid}}')}`;",
+          "const traceId = (pm.environment.get('traceId') || pm.variables.replaceIn('{{$guid}}').replace(/-/g, '')).toLowerCase();",
+          "const spanId = pm.variables.replaceIn('{{$guid}}').replace(/-/g, '').slice(0, 16).toLowerCase();",
+          "pm.environment.set('traceSessionId', sessionId);",
+          "pm.environment.set('traceCorrelationId', correlationId);",
+          "pm.environment.set('traceId', traceId);",
+          "pm.request.headers.upsert({ key: 'X-Session-ID', value: sessionId });",
+          "pm.request.headers.upsert({ key: 'X-Correlation-ID', value: correlationId });",
+          "pm.request.headers.upsert({ key: 'traceparent', value: `00-${traceId}-${spanId}-01` });"
+        ]
+      }
+    },
+    {
       "listen": "test",
       "script": {
         "type": "text/javascript",
         "exec": [
           "pm.test('X-Request-ID is present', () => pm.expect(pm.response.headers.get('X-Request-ID')).to.be.ok);",
+          "pm.test('Trace identity headers are present', () => { ['X-Session-ID', 'X-Correlation-ID', 'X-Trace-ID', 'X-Span-ID', 'X-Execution-ID', 'traceparent'].forEach(name => pm.expect(pm.response.headers.get(name), name).to.be.ok); });",
+          "pm.test('Session and correlation round-trip', () => { pm.expect(pm.response.headers.get('X-Session-ID')).to.eql(pm.environment.get('traceSessionId')); pm.expect(pm.response.headers.get('X-Correlation-ID')).to.eql(pm.environment.get('traceCorrelationId')); });",
           "pm.test('Responses are not cached', () => pm.expect(pm.response.headers.get('Cache-Control')).to.eql('no-store'));",
           "pm.test('MIME sniffing is disabled', () => pm.expect(pm.response.headers.get('X-Content-Type-Options')).to.eql('nosniff'));"
         ]
@@ -101,7 +121,10 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('Status is 200', () => pm.response.to.have.status(200));",
-                  "pm.test('OpenAI response shape is valid', () => { const b = pm.response.json(); pm.expect(b.object).to.eql('chat.completion'); pm.expect(b.choices[0].message.role).to.eql('assistant'); pm.expect(b.usage.total_tokens).to.be.a('number'); });"
+                  "pm.test('OpenAI response shape is valid', () => { const b = pm.response.json(); pm.expect(b.object).to.eql('chat.completion'); pm.expect(b.choices[0].message.role).to.eql('assistant'); pm.expect(b.usage.total_tokens).to.be.a('number'); });",
+                  "pm.test('End-to-end token telemetry is present', () => { ['X-First-Token-Ms', 'X-Last-Token-Ms', 'X-Input-Tokens', 'X-Output-Tokens', 'X-Cache-Hit-Percent', 'Server-Timing'].forEach(name => pm.expect(pm.response.headers.get(name), name).to.be.ok); });",
+                  "pm.test('Header token counts match usage', () => { const b = pm.response.json(); pm.expect(Number(pm.response.headers.get('X-Input-Tokens'))).to.eql(b.usage.prompt_tokens); pm.expect(Number(pm.response.headers.get('X-Output-Tokens'))).to.eql(b.usage.completion_tokens); });",
+                  "pm.test('First token does not occur after last token', () => pm.expect(Number(pm.response.headers.get('X-First-Token-Ms'))).to.be.at.most(Number(pm.response.headers.get('X-Last-Token-Ms'))));"
                 ]
               }
             }
@@ -499,9 +522,15 @@
                       "const token = pm.environment.get('apiKey');",
                       "if (!token) { throw new Error('Set apiKey in the selected environment first'); }",
                       "const started = Date.now();",
+                      "const batchSessionId = `postman-concurrent-session-${started}`;",
+                      "const batchCorrelationId = `postman-concurrent-corr-${started}`;",
+                      "const batchTraceId = pm.variables.replaceIn('{{$guid}}').replace(/-/g, '').toLowerCase();",
                       "const results = [];",
                       "let completed = 0;",
                       "pm.variables.set('concurrentCount', String(count));",
+                      "pm.variables.set('concurrentSessionId', batchSessionId);",
+                      "pm.variables.set('concurrentCorrelationId', batchCorrelationId);",
+                      "pm.variables.set('concurrentTraceId', batchTraceId);",
                       "for (let index = 0; index < count; index += 1) {",
                       "  pm.sendRequest({",
                       "    url: `${baseUrl}/v1/chat/completions`,",
@@ -509,7 +538,10 @@
                       "    header: {",
                       "      'Authorization': `Bearer ${token}`,",
                       "      'Content-Type': 'application/json',",
-                      "      'X-Request-ID': `postman-concurrent-${started}-${index + 1}`",
+                      "      'X-Request-ID': `postman-concurrent-${started}-${index + 1}`,",
+                      "      'X-Session-ID': batchSessionId,",
+                      "      'X-Correlation-ID': batchCorrelationId,",
+                      "      'traceparent': `00-${batchTraceId}-${String(index + 1).padStart(16, '0')}-01`",
                       "    },",
                       "    body: { mode: 'raw', raw: JSON.stringify({",
                       "      model,",
@@ -521,6 +553,17 @@
                       "      worker: index + 1,",
                       "      status: response ? response.code : 0,",
                       "      requestId: response ? (response.headers.get('X-Request-ID') || '') : '',",
+                      "      sessionId: response ? (response.headers.get('X-Session-ID') || '') : '',",
+                      "      correlationId: response ? (response.headers.get('X-Correlation-ID') || '') : '',",
+                      "      traceId: response ? (response.headers.get('X-Trace-ID') || '') : '',",
+                      "      spanId: response ? (response.headers.get('X-Span-ID') || '') : '',",
+                      "      executionId: response ? (response.headers.get('X-Execution-ID') || '') : '',",
+                      "      firstTokenMs: response ? Number(response.headers.get('X-First-Token-Ms')) : null,",
+                      "      lastTokenMs: response ? Number(response.headers.get('X-Last-Token-Ms')) : null,",
+                      "      cacheHitPercent: response ? Number(response.headers.get('X-Cache-Hit-Percent')) : null,",
+                      "      inputTokens: response ? Number(response.headers.get('X-Input-Tokens')) : null,",
+                      "      outputTokens: response ? Number(response.headers.get('X-Output-Tokens')) : null,",
+                      "      serverTiming: response ? (response.headers.get('Server-Timing') || '') : '',",
                       "      error: error ? error.message : '',",
                       "      durationMs: Date.now() - started",
                       "    };",
@@ -546,9 +589,11 @@
                       "const count = Number(pm.variables.get('concurrentCount'));",
                       "const limit = Number(pm.environment.get('maxConcurrentRequests') || 1);",
                       "pm.test('Every concurrent response is captured', () => pm.expect(results).to.have.length(count));",
-                      "pm.test('Only success or busy responses occur', () => pm.expect(results.every(r => [200, 429].includes(r.status))).to.eql(true));",
-                      "pm.test('Configured generation slots succeed', () => pm.expect(results.filter(r => r.status === 200)).to.have.length(Math.min(limit, count)));",
-                      "pm.test('Excess concurrent calls are rejected as busy', () => pm.expect(results.filter(r => r.status === 429)).to.have.length(Math.max(0, count - limit)));"
+                      "pm.test('Queued coding-agent requests all succeed', () => pm.expect(results.every(r => r.status === 200)).to.eql(true));",
+                      "pm.test('Every request eventually runs', () => pm.expect(results.filter(r => r.status === 200)).to.have.length(count));"
+                      ,"pm.test('Batch shares session, correlation, and trace IDs', () => { pm.expect(new Set(results.map(r => r.sessionId))).to.have.property('size', 1); pm.expect(results[0].sessionId).to.eql(pm.variables.get('concurrentSessionId')); pm.expect(new Set(results.map(r => r.correlationId))).to.have.property('size', 1); pm.expect(new Set(results.map(r => r.traceId))).to.have.property('size', 1); });",
+                      "pm.test('Every execution, span, and request ID is unique', () => { ['executionId', 'spanId', 'requestId'].forEach(field => pm.expect(new Set(results.map(r => r[field])).size, field).to.eql(count)); });",
+                      "pm.test('Every result has token timing, cache, counts, and Server-Timing', () => pm.expect(results.every(r => Number.isFinite(r.firstTokenMs) && Number.isFinite(r.lastTokenMs) && r.firstTokenMs <= r.lastTokenMs && Number.isFinite(r.cacheHitPercent) && Number.isFinite(r.inputTokens) && Number.isFinite(r.outputTokens) && r.serverTiming.includes('first-token'))).to.eql(true));"
                     ]
                   }
                 }
@@ -693,6 +738,125 @@
               }
             }
           ]
+        },
+        {
+          "name": "KV Cache",
+          "description": "Verifies generation KV caching for Transformers models and cross-request prompt/KV caching for GGUF models.",
+          "item": [
+            {
+              "name": "KV Cache - Long Generation",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"model\": \"{{model}}\",\n  \"messages\": [\n    {\n      \"role\": \"system\",\n      \"content\": \"Answer directly and do not use tools.\"\n    },\n    {\n      \"role\": \"user\",\n      \"content\": \"Explain in 8 concise numbered points how a transformer KV cache avoids recomputing earlier attention keys and values during autoregressive decoding. Include its memory tradeoff and state clearly that this server keeps the cache only for the current generation.\"\n    }\n  ],\n  \"max_tokens\": 256,\n  \"temperature\": 0\n}"
+                },
+                "url": "{{baseUrl}}/v1/chat/completions",
+                "description": "Confirms that server-side, per-generation KV caching is enabled. Repeating the request does not reuse a cache from an earlier HTTP call."
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                      "pm.test('KV cache is enabled', () => pm.expect(pm.response.headers.get('X-KV-Cache')).to.match(/^enabled; scope=/));",
+                      "const body = pm.response.json();",
+                      "pm.test('Completion contains generated tokens', () => pm.expect(body.usage.completion_tokens).to.be.above(0));",
+                      "pm.test('First/last token latency is reported', () => { const first = Number(pm.response.headers.get('X-First-Token-Ms')); const last = Number(pm.response.headers.get('X-Last-Token-Ms')); pm.expect(first).to.be.at.least(0); pm.expect(last).to.be.at.least(first); });",
+                      "pm.test('Token counts match usage', () => { pm.expect(Number(pm.response.headers.get('X-Input-Tokens'))).to.eql(body.usage.prompt_tokens); pm.expect(Number(pm.response.headers.get('X-Output-Tokens'))).to.eql(body.usage.completion_tokens); });",
+                      "pm.test('Cache hit percentage is numeric', () => pm.expect(Number(pm.response.headers.get('X-Cache-Hit-Percent'))).to.be.within(0, 100));",
+                      "pm.test('Completion has an answer', () => pm.expect(body.choices[0].message.content).to.be.a('string').and.not.empty);",
+                      "pm.environment.set('kvCacheResponseMs', String(pm.response.responseTime));",
+                      "pm.environment.set('kvCacheCompletionTokens', String(body.usage.completion_tokens));"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "GGUF KV Cache - Warm Coding Prefix",
+              "request": {
+                "method": "POST",
+                "header": [{"key": "Content-Type", "value": "application/json"}],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"model\": \"{{qwen3_8b_model}}\",\n  \"messages\": [\n    {\"role\": \"system\", \"content\": \"You are a coding agent. Inspect requirements carefully, preserve existing behavior, explain risks briefly, and return production-ready Python. The project uses FastAPI, Pydantic v2, pytest, strict typing, structured logging, API-key authentication, and must remain backward compatible.\"},\n    {\"role\": \"user\", \"content\": \"Design a retry helper with exponential backoff and jitter. Return the interface and tests.\"}\n  ],\n  \"reasoning_effort\": \"low\",\n  \"max_tokens\": 256,\n  \"temperature\": 0.2\n}"
+                },
+                "url": "{{baseUrl}}/v1/chat/completions",
+                "description": "Run first to populate the GGUF RAM prompt/KV cache with a realistic coding-agent prefix."
+              },
+              "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
+                "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                "pm.test('Cross-request prompt cache is enabled', () => pm.expect(pm.response.headers.get('X-KV-Cache')).to.eql('enabled; scope=prompt-and-generation'));",
+                "pm.environment.set('kvCacheWarmHitPercent', pm.response.headers.get('X-Cache-Hit-Percent') || '0');",
+                "pm.environment.set('kvCacheWarmMs', String(pm.response.responseTime));"
+              ]}}]
+            },
+            {
+              "name": "GGUF KV Cache - Reuse Coding Prefix",
+              "request": {
+                "method": "POST",
+                "header": [{"key": "Content-Type", "value": "application/json"}],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"model\": \"{{qwen3_8b_model}}\",\n  \"messages\": [\n    {\"role\": \"system\", \"content\": \"You are a coding agent. Inspect requirements carefully, preserve existing behavior, explain risks briefly, and return production-ready Python. The project uses FastAPI, Pydantic v2, pytest, strict typing, structured logging, API-key authentication, and must remain backward compatible.\"},\n    {\"role\": \"user\", \"content\": \"Now implement a circuit breaker using the same engineering constraints.\"}\n  ],\n  \"reasoning_effort\": \"low\",\n  \"max_tokens\": 256,\n  \"temperature\": 0.2\n}"
+                },
+                "url": "{{baseUrl}}/v1/chat/completions",
+                "description": "Run immediately after Warm Coding Prefix so llama.cpp can restore the shared system prefix from its RAM cache."
+              },
+              "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
+                "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                "pm.test('Cross-request prompt cache remains enabled', () => pm.expect(pm.response.headers.get('X-KV-Cache')).to.eql('enabled; scope=prompt-and-generation'));",
+                "pm.test('Warm-cache telemetry is reported', () => pm.expect(Number(pm.response.headers.get('X-Cache-Hit-Percent'))).to.be.within(0, 100));",
+                "pm.environment.set('kvCacheReuseHitPercent', pm.response.headers.get('X-Cache-Hit-Percent') || '0');",
+                "pm.environment.set('kvCacheReuseMs', String(pm.response.responseTime));"
+              ]}}]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Large GGUF Coding Models",
+      "description": "Install and activate the selected model before running these CPU-intensive requests.",
+      "item": [
+        {
+          "name": "Qwen3 8B - Refactor Request",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {"mode": "raw", "raw": "{\n  \"model\": \"{{qwen3_8b_model}}\",\n  \"messages\": [\n    {\"role\": \"system\", \"content\": \"Act as a careful coding agent. Return a concise plan followed by production-ready Python and pytest tests.\"},\n    {\"role\": \"user\", \"content\": \"Refactor a synchronous retry loop into a reusable async retry helper with cancellation safety, exponential backoff, bounded jitter, type hints, and dependency-injected sleep.\"}\n  ],\n  \"reasoning_effort\": \"low\",\n  \"max_tokens\": 512,\n  \"temperature\": 0.2\n}"},
+            "url": "{{baseUrl}}/v1/chat/completions"
+          },
+          "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": ["pm.test('Qwen3 8B succeeds', () => pm.response.to.have.status(200));", "pm.test('Answer is non-empty', () => pm.expect(pm.response.json().choices[0].message.content).to.be.a('string').and.not.empty);"]}}]
+        },
+        {
+          "name": "DeepSeek R1 7B - Debug Request",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {"mode": "raw", "raw": "{\n  \"model\": \"{{deepseek_r1_7b_model}}\",\n  \"messages\": [\n    {\"role\": \"system\", \"content\": \"Act as a debugging coding agent. Separate observed evidence from hypotheses and propose the smallest safe fix.\"},\n    {\"role\": \"user\", \"content\": \"A FastAPI endpoint intermittently returns 500 because a background thread mutates a shared dictionary while requests iterate it. Diagnose the race and provide a thread-safe implementation plus a regression test.\"}\n  ],\n  \"reasoning_effort\": \"medium\",\n  \"max_tokens\": 512,\n  \"temperature\": 0.2\n}"},
+            "url": "{{baseUrl}}/v1/chat/completions"
+          },
+          "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": ["pm.test('DeepSeek R1 7B succeeds', () => pm.response.to.have.status(200));", "pm.test('Assistant message exists', () => pm.expect(pm.response.json().choices[0].message).to.be.an('object'));"]}}]
+        },
+        {
+          "name": "Llama 3.1 8B - Review Request",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {"mode": "raw", "raw": "{\n  \"model\": \"{{llama31_8b_model}}\",\n  \"messages\": [\n    {\"role\": \"system\", \"content\": \"Review code for correctness, security, and maintainability. Prioritize findings and avoid inventing context.\"},\n    {\"role\": \"user\", \"content\": \"Review this pattern: an API accepts a user-supplied filesystem path and calls shutil.rmtree(path). Explain the vulnerabilities and provide a safe allowlisted deletion helper.\"}\n  ],\n  \"max_tokens\": 384,\n  \"temperature\": 0.2\n}"},
+            "url": "{{baseUrl}}/v1/chat/completions"
+          },
+          "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": ["pm.test('Llama 3.1 8B succeeds', () => pm.response.to.have.status(200));", "pm.test('Review is non-empty', () => pm.expect(pm.response.json().choices[0].message.content).to.be.a('string').and.not.empty);"]}}]
         }
       ]
     },

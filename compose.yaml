@@ -16,16 +16,27 @@ services:
       LLM_STUDIO_API_KEY: "${LLM_STUDIO_API_KEY:?LLM_STUDIO_API_KEY is required}"
       LLM_STUDIO_CPU_THREADS: "${LLM_STUDIO_CPU_THREADS:-3}"
       LLM_STUDIO_MAX_CONCURRENT_REQUESTS: "${LLM_STUDIO_MAX_CONCURRENT_REQUESTS:-1}"
-      LLM_STUDIO_RATE_LIMIT_PER_MINUTE: "${LLM_STUDIO_RATE_LIMIT_PER_MINUTE:-30}"
-      LLM_STUDIO_REQUEST_TIMEOUT_SECONDS: "${LLM_STUDIO_REQUEST_TIMEOUT_SECONDS:-180}"
+      LLM_STUDIO_REQUEST_TIMEOUT_SECONDS: "${LLM_STUDIO_REQUEST_TIMEOUT_SECONDS:-900}"
+      LLM_STUDIO_QUEUE_TIMEOUT_SECONDS: "${LLM_STUDIO_QUEUE_TIMEOUT_SECONDS:-900}"
+      LLM_STUDIO_REQUEST_TRACE_LOGGING: "${LLM_STUDIO_REQUEST_TRACE_LOGGING:-true}"
+      LLM_STUDIO_REQUEST_TRACE_LOG_PATH: /data/logs/requests.jsonl
+      LLM_STUDIO_REQUEST_TRACE_MAX_CONTENT_CHARS: "${LLM_STUDIO_REQUEST_TRACE_MAX_CONTENT_CHARS:-32768}"
       HF_HOME: /data/models/huggingface
       MODEL_ID: "${MODEL_ID:-Qwen/Qwen3.5-0.8B}"
+      MODEL_BACKEND: "${MODEL_BACKEND:-multimodal}"
+      MODEL_DTYPE: "${MODEL_DTYPE:-auto}"
+      MODEL_ALLOWED_MODELS: "${MODEL_ALLOWED_MODELS:-Qwen/Qwen3.5-0.8B,Qwen/Qwen3.5-2B}"
+      MODEL_IDLE_UNLOAD_SECONDS: "${MODEL_IDLE_UNLOAD_SECONDS:-3600}"
+      MODEL_GGUF_CONTEXT_TOKENS: "${MODEL_GGUF_CONTEXT_TOKENS:-32768}"
+      MODEL_KV_CACHE_BYTES: "${MODEL_KV_CACHE_BYTES:-2147483648}"
       MODEL_LOAD_ON_START: "${MODEL_LOAD_ON_START:-false}"
-      MODEL_MAX_INPUT_TOKENS: "${MODEL_MAX_INPUT_TOKENS:-2048}"
-      MODEL_MAX_NEW_TOKENS: "${MODEL_MAX_NEW_TOKENS:-512}"
+      MODEL_CONTEXT_TOKENS: "${MODEL_CONTEXT_TOKENS:-262144}"
+      MODEL_MAX_INPUT_TOKENS: "${MODEL_MAX_INPUT_TOKENS:-262144}"
+      MODEL_MAX_NEW_TOKENS: "${MODEL_MAX_NEW_TOKENS:-2048}"
+      MODEL_MIN_NEW_TOKENS: "${MODEL_MIN_NEW_TOKENS:-16}"
       MODEL_REVISION: "${MODEL_REVISION:-main}"
-    ports:
-      - "${LLM_STUDIO_BIND_ADDRESS:-127.0.0.1}:${LLM_STUDIO_PORT:-18080}:8000"
+    expose:
+      - "8000"
     volumes:
       - type: bind
         source: "${LLM_STUDIO_DATA_DIR:-/opt/data/llm-studio}/models"
@@ -43,8 +54,6 @@ services:
     security_opt:
       - no-new-privileges:true
     pids_limit: 256
-    mem_limit: 8g
-    mem_reservation: 4g
     cpus: 3.0
     healthcheck:
       test:
@@ -56,6 +65,145 @@ services:
       timeout: 5s
       retries: 8
       start_period: 30s
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"
+
+  traefik-local:
+    profiles: ["local"]
+    image: "${LLM_STUDIO_TRAEFIK_IMAGE:-traefik:v3.3}"
+    container_name: llm-studio-traefik-local
+    restart: unless-stopped
+    command:
+      - --configFile=/etc/traefik/traefik.yml
+    ports:
+      - "${LLM_STUDIO_BIND_ADDRESS:-127.0.0.1}:${LLM_STUDIO_PORT:-18080}:80"
+    volumes:
+      - ./configs/traefik/traefik.yml:/etc/traefik/traefik.yml:ro
+      - ./configs/traefik/dynamic:/etc/traefik/dynamic:ro
+    depends_on:
+      api:
+        condition: service_healthy
+    networks:
+      - llm-studio-net
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=32m,mode=1777
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 128
+    healthcheck:
+      test: ["CMD", "traefik", "healthcheck", "--ping"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"
+
+  traefik-internet:
+    profiles: ["internet"]
+    image: "${LLM_STUDIO_TRAEFIK_IMAGE:-traefik:v3.3}"
+    container_name: llm-studio-traefik-internet
+    restart: unless-stopped
+    command:
+      - --configFile=/etc/traefik/traefik.yml
+      - --certificatesresolvers.letsencrypt.acme.email=${LLM_STUDIO_ACME_EMAIL:-unset@example.invalid}
+      - --certificatesresolvers.letsencrypt.acme.caserver=${LLM_STUDIO_ACME_CA_SERVER:-https://acme-v02.api.letsencrypt.org/directory}
+    ports:
+      - "${LLM_STUDIO_INTERNET_BIND_ADDRESS:-0.0.0.0}:${LLM_STUDIO_HTTP_PORT:-80}:80"
+      - "${LLM_STUDIO_INTERNET_BIND_ADDRESS:-0.0.0.0}:${LLM_STUDIO_HTTPS_PORT:-443}:443"
+    volumes:
+      - ./configs/traefik/traefik.internet.yml:/etc/traefik/traefik.yml:ro
+      - "${LLM_STUDIO_DATA_DIR:-/opt/data/llm-studio}/configs/traefik-internet.yml:/etc/traefik/dynamic/llm-studio.yml:ro"
+      - "${LLM_STUDIO_DATA_DIR:-/opt/data/llm-studio}/traefik:/letsencrypt"
+    depends_on:
+      api:
+        condition: service_healthy
+    networks:
+      - llm-studio-net
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=32m,mode=1777
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 128
+    healthcheck:
+      test: ["CMD", "traefik", "healthcheck", "--ping"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"
+
+  openobserve:
+    profiles: ["observability"]
+    image: "${LLM_STUDIO_OPENOBSERVE_IMAGE:-public.ecr.aws/zinclabs/openobserve:v1.0.3}"
+    container_name: llm-studio-openobserve
+    restart: unless-stopped
+    environment:
+      ZO_DATA_DIR: /data
+      ZO_ROOT_USER_EMAIL: "${LLM_STUDIO_OPENOBSERVE_EMAIL:-admin@llm-studio.local}"
+      ZO_ROOT_USER_PASSWORD: "${LLM_STUDIO_OPENOBSERVE_PASSWORD:?LLM_STUDIO_OPENOBSERVE_PASSWORD is required when observability is enabled}"
+      ZO_TELEMETRY: "false"
+      ZO_COMPACT_DATA_RETENTION_DAYS: "${LLM_STUDIO_OBSERVABILITY_RETENTION_DAYS:-30}"
+      ZO_COMPACT_FAST_MODE: "false"
+    ports:
+      - "${LLM_STUDIO_OBSERVABILITY_BIND_ADDRESS:-127.0.0.1}:${LLM_STUDIO_OBSERVABILITY_PORT:-15080}:5080"
+    volumes:
+      - type: bind
+        source: "${LLM_STUDIO_DATA_DIR:-/opt/data/llm-studio}/openobserve"
+        target: /data
+    networks:
+      - llm-studio-net
+    security_opt:
+      - no-new-privileges:true
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"
+
+  otel-collector:
+    profiles: ["observability"]
+    image: "${LLM_STUDIO_OTEL_COLLECTOR_IMAGE:-otel/opentelemetry-collector-contrib:0.153.0}"
+    container_name: llm-studio-otel-collector
+    restart: unless-stopped
+    user: "${LLM_STUDIO_APP_UID:-10001}:${LLM_STUDIO_APP_GID:-10001}"
+    command: ["--config=/etc/otelcol-contrib/config.yaml"]
+    environment:
+      OPENOBSERVE_AUTH: "${LLM_STUDIO_OPENOBSERVE_AUTH:?LLM_STUDIO_OPENOBSERVE_AUTH is required when observability is enabled}"
+    volumes:
+      - ./configs/otel-collector.yml:/etc/otelcol-contrib/config.yaml:ro
+      - "${LLM_STUDIO_DATA_DIR:-/opt/data/llm-studio}/logs:/var/log/llm-studio:ro"
+      - "${LLM_STUDIO_DATA_DIR:-/opt/data/llm-studio}/otel:/var/lib/otelcol"
+      - /proc:/hostfs/proc:ro
+      - /sys:/hostfs/sys:ro
+    depends_on:
+      openobserve:
+        condition: service_started
+    networks:
+      - llm-studio-net
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=32m,mode=1777
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 128
+    mem_limit: 256m
     logging:
       driver: json-file
       options:

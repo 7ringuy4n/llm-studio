@@ -1,0 +1,19 @@
+http:
+  routers:
+    llm-studio-api:
+      rule: "PathPrefix(`/`)"
+      entryPoints:
+        - web
+      service: llm-studio-api
+      priority: 100
+
+  services:
+    llm-studio-api:
+      loadBalancer:
+        passHostHeader: true
+        healthCheck:
+          path: /health
+          interval: 15s
+          timeout: 5s
+        servers:
+          - url: "http://api:8000"
