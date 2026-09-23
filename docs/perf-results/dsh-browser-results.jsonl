@@ -1,0 +1,5 @@
+{"source": "dsh-browser", "model": "Llama 3.1 8B Instruct Q4_K_M", "mode": "minimal", "prompt": "short-vpn-health", "tokens_total": 391, "cache_pct": 0, "wall_s": 38, "tok_s": 5500.0}
+{"source": "dsh-browser", "model": "Qwen/Qwen3.5-0.8B", "mode": "minimal", "prompt": "short-vpn-health", "tokens_total": 490, "cache_pct": 0, "wall_s": 4, "tok_s": 4000.0}
+{"source": "dsh-browser", "model": "Qwen/Qwen3.5-0.8B", "mode": "minimal-web", "prompt": "short-vpn-health", "tokens_total": 739, "cache_pct": 0, "wall_s": 7, "tok_s": 17000.0}
+{"source": "dsh-browser", "model": "Qwen3.5 2B", "mode": "minimal", "prompt": "short-vpn-health", "tokens_total": 490, "cache_pct": 0, "wall_s": 20, "tok_s": 6667.0}
+{"source":"dsh-browser","model":"Qwen/Qwen3.5-0.8B","mode":"standard","prompt":"short-vpn-health","error":"blocked_deep_diving_tool_loop","note":"Standard mode stuck Deep diving >2m on no-tools VPN prompt with 0.8B"}

@@ -70,3 +70,10 @@ Reimport both the collection and environment after updating repository files.
 | `make test-dsh` | DSH headless minimal + standard |
 
 Report: `docs/perf-results/model-statistic-report.md`.
+
+## OCR / office docs
+
+Real corpus (symlink): `postman/fixtures/ocr-work` →
+`Documents/Work/test docs/OCR` (pdf, docx, md, xlsx, csv, pptx, jpg, png).
+
+Live gate: `make test-ocr` (`LLM_STUDIO_OCR_ROOT` overrides the Work path).

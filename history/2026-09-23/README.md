@@ -23,3 +23,9 @@ Perf artifacts: `docs/perf-results/`. Guide: `docs/16-cpu-performance.md`.
 
 - Offline: `./test/run_all.sh`
 - Live: health + `/v1/models` + optional `web_search_contract.py` over VPN
+
+## Related
+
+- [cache-miss-session-96445663.md](./cache-miss-session-96445663.md) — HF multimodal
+  has no cross-request prompt prefix cache (`cache_hit_percent=0` expected on
+  Qwen3.5-0.8B/2B; GGUF hits via `LlamaRAMCache`).

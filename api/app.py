@@ -13,8 +13,9 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse, StreamingResponse
 from fastapi.encoders import jsonable_encoder
 
+from .cancellation import CancelToken, GenerationCancelled, cancel_registry
 from .model_runtime import ALLOWED_BY_ID, ALLOWED_MODELS, GenerationResult, runtime
-from .schemas import ChatCompletionRequest
+from .schemas import CancelGenerationRequest, ChatCompletionRequest
 from .security import require_api_key
 from .settings import settings
 from .tracing import new_trace_context, response_headers, trace_event
@@ -132,6 +133,51 @@ async def health() -> dict[str, object]:
         "model_loaded": runtime.loaded,
         "loaded_model": runtime.loaded_model_id,
     }
+
+
+@app.post("/v1/generation/cancel")
+async def cancel_generation(
+    body: CancelGenerationRequest,
+    raw_request: Request,
+    _: str = Depends(require_api_key),
+) -> dict[str, object]:
+    """Abort an in-flight generation by correlation / request / session id.
+
+    DeepSeek Harness Stop should also abort the HTTP chat request (disconnect).
+    Use this endpoint when the client keeps the socket open but still wants the
+    VPS worker to stop (pass the same X-Correlation-ID used for chat).
+    """
+    trace = raw_request.state.trace
+    candidates = [
+        body.correlation_id,
+        body.request_id,
+        body.session_id,
+        raw_request.headers.get("x-correlation-id"),
+        raw_request.headers.get("x-request-id"),
+        raw_request.headers.get("x-session-id"),
+    ]
+    cancelled = False
+    matched: str | None = None
+    for key in candidates:
+        if key and cancel_registry.cancel(key):
+            cancelled = True
+            matched = key
+            break
+    if cancelled:
+        runtime.request_interrupt()
+    elif not any(candidates):
+        raise HTTPException(
+            status_code=400,
+            detail="provide correlation_id, request_id, or session_id (body or headers)",
+        )
+    trace_event(
+        "model_generation_cancel_requested",
+        trace,
+        cancelled=cancelled,
+        matched_id=matched,
+        reason="explicit_cancel_api",
+    )
+    return {"cancelled": cancelled, "matched_id": matched}
 
 
 @app.get("/v1/models")
@@ -303,17 +349,44 @@ async def chat_completions(
         ) from exc
     queue_latency_ms = round((time.monotonic() - queue_started) * 1000, 1)
     model_started = time.monotonic()
-    generation_task = asyncio.create_task(asyncio.to_thread(runtime.generate, request))
+    cancel_token = CancelToken()
+    registered_keys = cancel_registry.register(
+        cancel_token,
+        trace.request_id,
+        trace.correlation_id,
+        trace.session_id,
+    )
+    generation_task = asyncio.create_task(
+        asyncio.to_thread(runtime.generate, request, cancel_token)
+    )
     release_slot_now = True
+
+    async def watch_client_disconnect() -> None:
+        while not generation_task.done():
+            if await raw_request.is_disconnected():
+                cancel_token.cancel()
+                runtime.request_interrupt()
+                trace_event(
+                    "model_generation_cancel_requested",
+                    trace,
+                    model=request.model,
+                    reason="client_disconnected",
+                )
+                return
+            await asyncio.sleep(0.2)
+
+    disconnect_watcher = asyncio.create_task(watch_client_disconnect())
     try:
         result = await asyncio.wait_for(
             asyncio.shield(generation_task),
             timeout=settings.request_timeout_seconds,
         )
     except TimeoutError as exc:
-        # A Python worker thread cannot be killed safely. Keep its concurrency slot
-        # reserved until it really exits so timed-out work cannot pile up.
+        # Cooperative cancel: ask the worker to stop instead of only holding the slot.
+        cancel_token.cancel()
+        runtime.request_interrupt()
         release_slot_now = False
+
         def generation_finished(_: asyncio.Task[GenerationResult]) -> None:
             generation_slots.release()
             runtime.mark_idle()
@@ -329,6 +402,46 @@ async def chat_completions(
             error="Generation timed out",
         )
         raise HTTPException(status_code=504, detail="Generation timed out") from exc
+    except GenerationCancelled as exc:
+        runtime.mark_idle()
+        trace_event(
+            "model_response_cancelled",
+            trace,
+            model=request.model,
+            status=499,
+            queue_latency_ms=queue_latency_ms,
+            model_latency_ms=round((time.monotonic() - model_started) * 1000, 1),
+            error=str(exc),
+        )
+        return JSONResponse(
+            status_code=499,
+            content={
+                "error": {
+                    "message": "Generation cancelled by client",
+                    "type": "cancelled_error",
+                }
+            },
+        )
+    except asyncio.CancelledError:
+        cancel_token.cancel()
+        runtime.request_interrupt()
+        release_slot_now = False
+
+        def generation_finished_after_cancel(_: asyncio.Task[GenerationResult]) -> None:
+            generation_slots.release()
+            runtime.mark_idle()
+
+        generation_task.add_done_callback(generation_finished_after_cancel)
+        trace_event(
+            "model_response_cancelled",
+            trace,
+            model=request.model,
+            status=499,
+            queue_latency_ms=queue_latency_ms,
+            model_latency_ms=round((time.monotonic() - model_started) * 1000, 1),
+            error="request task cancelled",
+        )
+        raise
     except (OSError, RuntimeError) as exc:
         runtime.mark_idle()
         logger.exception("Model generation failed")
@@ -343,6 +456,8 @@ async def chat_completions(
         )
         raise HTTPException(status_code=503, detail="Model is unavailable") from exc
     finally:
+        disconnect_watcher.cancel()
+        cancel_registry.unregister(*registered_keys)
         if release_slot_now:
             generation_slots.release()
 

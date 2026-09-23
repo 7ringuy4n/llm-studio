@@ -24,6 +24,7 @@ from transformers import (
 )
 
 from .model_catalog import ModelSpec, allowed_models
+from .cancellation import CancelToken, GenerationCancelled
 from .schemas import (
     ChatCompletionRequest,
     ImageURLContentPart,
@@ -81,6 +82,16 @@ class _TokenTimingCriteria(StoppingCriteria):
         return False
 
 
+class _CancelStoppingCriteria(StoppingCriteria):
+    """Stop Hugging Face generate() when the client cancel token is set."""
+
+    def __init__(self, cancel_token: CancelToken | None) -> None:
+        self.cancel_token = cancel_token
+
+    def __call__(self, input_ids, scores, **kwargs) -> bool:
+        return bool(self.cancel_token and self.cancel_token.cancelled())
+
+
 class _GGUFTokenTimingProcessor:
     """Record llama.cpp sampling callbacks while leaving logits unchanged."""
 
@@ -96,6 +107,17 @@ class _GGUFTokenTimingProcessor:
         self.last_token_latency_ms = elapsed
         return scores
 
+
+class _GGUFCancelLogitsProcessor:
+    """Abort llama.cpp sampling when the client cancel token is set."""
+
+    def __init__(self, cancel_token: CancelToken | None) -> None:
+        self.cancel_token = cancel_token
+
+    def __call__(self, input_ids, scores):
+        if self.cancel_token and self.cancel_token.cancelled():
+            raise GenerationCancelled("generation cancelled by client")
+        return scores
 
 def _image_from_data_url(data_url: str) -> Image.Image:
     encoded = data_url.split(",", 1)[1]
@@ -382,9 +404,17 @@ class ModelRuntime:
             messages.append(rendered)
         return messages
 
-    def generate(self, request: ChatCompletionRequest) -> GenerationResult:
+    def generate(
+        self,
+        request: ChatCompletionRequest,
+        cancel_token: CancelToken | None = None,
+    ) -> GenerationResult:
         self.cancel_idle()
+        if cancel_token is not None:
+            cancel_token.raise_if_cancelled()
         spec = self.load(request.model)
+        if cancel_token is not None:
+            cancel_token.raise_if_cancelled()
         tools = None
         if request.tools and request.tool_choice != "none":
             tools = [tool.model_dump(exclude_none=True) for tool in request.tools]
@@ -403,7 +433,7 @@ class ModelRuntime:
             raise RuntimeError("configured context window cannot fit the requested completion")
 
         if spec.backend == "gguf":
-            return self._generate_gguf(request, spec, tools, max_new_tokens)
+            return self._generate_gguf(request, spec, tools, max_new_tokens, cancel_token)
 
         processor = self._processor
         tokenizer = self._tokenizer
@@ -432,6 +462,8 @@ class ModelRuntime:
         )
         inputs = inputs.to(model.device)
         prompt_tokens = int(inputs["input_ids"].shape[-1])
+        if cancel_token is not None:
+            cancel_token.raise_if_cancelled()
 
         generation_kwargs: dict[str, object] = {
             "max_new_tokens": max_new_tokens,
@@ -441,8 +473,10 @@ class ModelRuntime:
             "pad_token_id": tokenizer.eos_token_id,
             "eos_token_id": tokenizer.eos_token_id,
             "repetition_penalty": request.repetition_penalty,
-            # Reuse attention keys and values within this generation. The cache
-            # is request-scoped and is never shared between users.
+            # Reuse attention keys/values *within this generate() call only*.
+            # Cross-request prompt prefix reuse (OpenObserve cache_hit_percent)
+            # requires GGUF LlamaRAMCache — HF multimodal/text backends always
+            # report cached_prompt_tokens=0 across HTTP turns.
             "use_cache": True,
         }
         if request.temperature == 0:
@@ -462,9 +496,13 @@ class ModelRuntime:
 
         generation_started = time.monotonic()
         token_timing = _TokenTimingCriteria(generation_started)
-        generation_kwargs["stopping_criteria"] = StoppingCriteriaList([token_timing])
+        generation_kwargs["stopping_criteria"] = StoppingCriteriaList(
+            [token_timing, _CancelStoppingCriteria(cancel_token)]
+        )
         with torch.inference_mode():
             output = model.generate(**inputs, **generation_kwargs)
+        if cancel_token is not None and cancel_token.cancelled():
+            raise GenerationCancelled("generation cancelled by client")
         completed_latency_ms = round((time.monotonic() - generation_started) * 1000, 1)
 
         generated_ids = output[0, prompt_tokens:]
@@ -494,9 +532,12 @@ class ModelRuntime:
         spec: ModelSpec,
         tools: list[dict[str, object]] | None,
         max_new_tokens: int,
+        cancel_token: CancelToken | None = None,
     ) -> GenerationResult:
         model = self._model
         assert model is not None
+        if cancel_token is not None:
+            cancel_token.raise_if_cancelled()
         messages: list[dict[str, object]] = []
         for message in request.messages:
             if not isinstance(message.content, (str, type(None))):
@@ -538,11 +579,23 @@ class ModelRuntime:
         token_timing = _GGUFTokenTimingProcessor(generation_started)
         from llama_cpp import LogitsProcessorList
 
-        kwargs["logits_processor"] = LogitsProcessorList([token_timing])
+        processors: list[object] = [token_timing]
+        if cancel_token is not None:
+            processors.append(_GGUFCancelLogitsProcessor(cancel_token))
+        kwargs["logits_processor"] = LogitsProcessorList(processors)
         cache = getattr(model, "cache", None)
         if cache is not None and hasattr(cache, "last_cached_tokens"):
             cache.last_cached_tokens = 0
-        response = model.create_chat_completion(**kwargs)
+        try:
+            response = model.create_chat_completion(**kwargs)
+        except GenerationCancelled:
+            raise
+        except Exception:
+            if cancel_token is not None and cancel_token.cancelled():
+                raise GenerationCancelled("generation cancelled by client") from None
+            raise
+        if cancel_token is not None and cancel_token.cancelled():
+            raise GenerationCancelled("generation cancelled by client")
         choice = response["choices"][0]
         message = choice["message"]
         raw_text = message.get("content") or ""
@@ -583,6 +636,19 @@ class ModelRuntime:
             last_token_latency_ms=token_timing.last_token_latency_ms or completed_latency_ms,
             token_timing_source="llama_cpp_logits_callback",
         )
+
+    def request_interrupt(self) -> None:
+        """Best-effort native interrupt for backends that expose it (GGUF)."""
+        model = self._model
+        if model is None:
+            return
+        interrupt = getattr(model, "interrupt", None)
+        if callable(interrupt):
+            try:
+                interrupt()
+            except Exception:  # noqa: BLE001 - optional fast-path only
+                logger = __import__("logging").getLogger("llm_studio_api")
+                logger.debug("model.interrupt() failed", exc_info=True)
 
 
 runtime = ModelRuntime()

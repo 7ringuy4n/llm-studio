@@ -1,0 +1,93 @@
+{
+  "ocr_root": "/home/tringuyen/Documents/Work/test docs/OCR",
+  "doc_kinds": [
+    "md",
+    "pdf",
+    "docx",
+    "pptx",
+    "xlsx",
+    "csv"
+  ],
+  "results": [
+    {
+      "label": "Qwen/Qwen3.5-0.8B::ocr-md:message.md",
+      "wall_ms": 3731,
+      "prompt_tokens": 225,
+      "completion_tokens": 21,
+      "cache_hit_percent": "0.0",
+      "first_token_ms": "912.8",
+      "last_token_ms": "3586.8",
+      "answer_preview": "This weather update is for Ho Chi Minh City, with an observed temperature of 93\u00b0F."
+    },
+    {
+      "label": "Qwen/Qwen3.5-0.8B::ocr-pdf:hcmc_weather_report.pdf",
+      "wall_ms": 4255,
+      "prompt_tokens": 225,
+      "completion_tokens": 29,
+      "cache_hit_percent": "0.0",
+      "first_token_ms": "899.9",
+      "last_token_ms": "4164.5",
+      "answer_preview": "107\u00b0F\nThe document explicitly states \"RealFeel\u00ae 107\u00b0F \u2014 Very Hot\" under the Current Conditions section."
+    },
+    {
+      "label": "Qwen/Qwen3.5-0.8B::ocr-docx:hcmc_weather.docx",
+      "wall_ms": 3821,
+      "prompt_tokens": 350,
+      "completion_tokens": 22,
+      "cache_hit_percent": "0.0",
+      "first_token_ms": "1237.7",
+      "last_token_ms": "3679.4",
+      "answer_preview": "64%\n</think>\n\n64%\n</think>\n\n64%\n</think>\n\n64%"
+    },
+    {
+      "label": "Qwen/Qwen3.5-0.8B::ocr-pptx:hcmc_weather.pptx",
+      "wall_ms": 3686,
+      "prompt_tokens": 200,
+      "completion_tokens": 22,
+      "cache_hit_percent": "0.0",
+      "first_token_ms": "853.2",
+      "last_token_ms": "3564.2",
+      "answer_preview": "64%\n</think>\n\n64%\n</think>\n\n64%\n</think>\n\n64%"
+    },
+    {
+      "label": "Qwen/Qwen3.5-0.8B::ocr-xlsx:usage-events-2026-08-21.xlsx",
+      "wall_ms": 7513,
+      "prompt_tokens": 1090,
+      "completion_tokens": 30,
+      "cache_hit_percent": "0.0",
+      "first_token_ms": "3679.1",
+      "last_token_ms": "7421.2",
+      "answer_preview": "KPI Online & KPI Offline (KPI H\u1ecdc vi\u1ec7n)\n</think>\n\nKPI Online & KPI Offline (KPI H\u1ecdc vi\u1ec7n)"
+    },
+    {
+      "label": "Qwen/Qwen3.5-0.8B::ocr-csv:usage-events-2026-08-21.csv",
+      "wall_ms": 3492,
+      "prompt_tokens": 401,
+      "completion_tokens": 18,
+      "cache_hit_percent": "0.0",
+      "first_token_ms": "1409.8",
+      "last_token_ms": "3400.9",
+      "answer_preview": "Included\n</think>\n\nIncluded\n</think>\n\nIncluded\n</think>\n\nIncluded\n</think>\n\nIncluded"
+    },
+    {
+      "label": "Qwen/Qwen3.5-0.8B::ocr-image-jpg:7b2784ef8b450a1b5354.jpg",
+      "wall_ms": 7835,
+      "prompt_tokens": 410,
+      "completion_tokens": 38,
+      "cache_hit_percent": "0.0",
+      "first_token_ms": "2932.8",
+      "last_token_ms": "7494.9",
+      "answer_preview": "The main subject of this photo is a modern cityscape featuring several high-rise buildings under a partly cloudy sky, with a text overlay in Vietnamese indicating a flight plan for a passenger jet."
+    },
+    {
+      "label": "Qwen/Qwen3.5-0.8B::ocr-image-png:tired_man_test.png",
+      "wall_ms": 8265,
+      "prompt_tokens": 612,
+      "completion_tokens": 31,
+      "cache_hit_percent": "0.0",
+      "first_token_ms": "4151.8",
+      "last_token_ms": "7983.5",
+      "answer_preview": "A man with a graying beard and short hair holds a small glass bottle in his hand, his expression serious as he looks off to the side."
+    }
+  ]
+}

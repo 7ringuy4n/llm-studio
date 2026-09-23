@@ -14,6 +14,7 @@ UNITS=(
   "test/scripts/model_management_unit.py|model_management_unit"
   "test/scripts/tool_calling_unit.py|tool_calling_unit"
   "test/scripts/tracing_unit.py|tracing_unit"
+  "test/scripts/cancellation_unit.py|cancellation_unit"
 )
 
 case_total=$((1 + ${#UNITS[@]}))

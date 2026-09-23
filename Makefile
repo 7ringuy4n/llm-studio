@@ -116,8 +116,14 @@ test-models:
 test-realworld:
 	@python3 test/scripts/realworld_api_contract.py
 
+test-reasoning-cache:
+	@python3 test/scripts/reasoning_cache_contract.py
+
 test-dsh:
 	@python3 test/scripts/dsh_harness_contract.py
 
 test-vision:
 	@python3 test/scripts/vision_contract.py
+
+test-ocr:
+	@python3 test/scripts/ocr_docs_contract.py

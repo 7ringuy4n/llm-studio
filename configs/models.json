@@ -77,6 +77,20 @@
       "reasoning": false,
       "repo_id": "bartowski/Meta-Llama-3.1-8B-Instruct-GGUF",
       "gguf_filename": "Meta-Llama-3.1-8B-Instruct-Q4_K_M.gguf"
+    },
+    {
+      "alias": "qwen38-27b",
+      "id": "Qwen/Qwen3.8-27B",
+      "name": "Qwen3.8 27B (Vast Ollama Q4_K_M)",
+      "backend": "multimodal",
+      "revision": "main",
+      "context_tokens": 262144,
+      "max_new_tokens": 32768,
+      "dtype": "q4_k_m",
+      "vision": true,
+      "reasoning": true,
+      "deployment": "vast-ollama",
+      "ollama_model": "qwen3.8:27b-ctx64k"
     }
   ]
 }

@@ -62,7 +62,7 @@ See `docs/perf-results/comparison.md` § perf-cpus4. Mean total across 30 cells:
 
 ---
 
-## 2. Short + long prompt lab (all living models, 2026-09-23)
+## 2. Short + long prompt lab (all living models)
 
 Source: `test/reports/all-models-prompt-perf.json` (`make test-models`).
 Thinking off. **Updated requirement:** long prompts target **~10k tokens** of tool-trace
@@ -96,7 +96,7 @@ cross-model comparison:
 ## 2b. Vision lab (simple + complicated)
 
 Fixtures: `test/fixtures/vision/` (+ copies under `postman/fixtures/`).
-Gate: `make test-vision` — **PASS 8/8** (2026-09-23).
+Gate: `make test-vision` — **PASS 8/8**.
 
 | Model | Case | First token | Wall | Preview |
 | --- | --- | --- | --- | --- |
@@ -148,12 +148,232 @@ Gate: `make test-vision` — **PASS 8/8** (2026-09-23).
 | ~10k-token long prompt builders + 0.8B smoke | **PASS** |
 | Postman collection update | **Done** (`postman/`) |
 | Agent rule: all models + both presets + real-world + vision | Updated |
-| Browser | DSH UI reachable; BrowserSkill extension not connected |
+| Browser DSH web (bsk) minimal / +web / standard × Vast short | **PASS 3/3** |
+| Vast catalog cycle (pull→lab→rm each models.json) | **IN PROGRESS** (`vast-all-models-cycle.jsonl`) |
 | Report | this file |
 
 ---
 
-## 6. Scripts
+## 9. CPU VPS full statistic lab
+
+**Host:** 4 vCPU · 16 GiB · `LLM_STUDIO_API_CPUS=3.0` · one resident model  
+**Artifact:** `docs/perf-results/all-models-full-lab.jsonl` · **38 rows · 32 OK**  
+**Gap:** `Qwen/Qwen3-1.7B` → HTTP **404** (not in live `MODEL_ALLOWED_MODELS`).
+
+| Model | Case | OK | in/out | Cache% | First ms | Last ms | Wall s | Notes |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Qwen3.5-0.8B | short | Y | 17/16 | 0 | 1057 | 2746 | 11.5 | |
+| Qwen3.5-0.8B | long-2k | Y | 2671/16 | 0 | 14376 | 16842 | 17.0 | |
+| Qwen3.5-0.8B | cache-warm | Y | 46/16 | **0** | 302 | 2301 | 2.5 | HF: no cross-request cache |
+| Qwen3.5-0.8B | ocr-md | Y | 186/31 | 0 | 792 | 4763 | 4.9 | city **PASS** |
+| Qwen3.5-0.8B | vision | Y | 803/17 | 0 | 7194 | 9407 | 9.9 | |
+| Qwen3.5-0.8B | concurrency-2 | Y | — | — | — | — | 1.1 / 2.1 | queued |
+| Qwen3.5-2B | short | Y | 17/16 | 0 | 2903 | 6641 | 15.4 | |
+| Qwen3.5-2B | long-2k | Y | 2671/16 | 0 | 22802 | 26887 | 27.1 | |
+| Qwen3.5-2B | cache-warm | Y | 46/16 | **0** | 450 | 3553 | 3.7 | HF |
+| Qwen3.5-2B | ocr-md | Y | 186/50 | 0 | 1396 | 13956 | 14.2 | city **PASS** |
+| Qwen3.5-2B | vision | Y | 803/24 | 0 | 17643 | 23549 | 24.0 | |
+| Qwen3-1.7B | *all* | **N** | — | — | — | — | — | not in `MODEL_ALLOWED_MODELS` |
+| Qwen3-8B | short | Y | 17/5 | 0 | 872 | 1429 | 16.9 | |
+| Qwen3-8B | long-2k | Y | 2671/6 | 0.11 | **138604** | 139641 | 141.4 | prompt-eval bound |
+| Qwen3-8B | cache-warm | Y | 46/6 | **100** | 155 | 830 | 1.0 | GGUF prefix |
+| Qwen3-8B | ocr-md | Y | 174/9 | 1.72 | 11530 | 12782 | 13.2 | city **PASS** |
+| DeepSeek-R1 7B | long-2k | Y | 2666/16 | 0.08 | 127106 | 129092 | 129.9 | |
+| DeepSeek-R1 7B | cache-warm | Y | 36/16 | **100** | 118 | 1913 | 2.1 | |
+| DeepSeek-R1 7B | ocr-md | Y | 169/64 | 1.18 | 8461 | 15424 | 15.7 | city **FAIL** |
+| Llama 3.1 8B | long-2k | Y | 2538/2 | 1.18 | 129531 | 129841 | 131.1 | |
+| Llama 3.1 8B | cache-warm | Y | 60/2 | **100** | 110 | 358 | 0.6 | |
+| Llama 3.1 8B | ocr-md | Y | 196/8 | 15.31 | 9460 | 10326 | 10.8 | city **PASS** |
+
+**Takeaway:** GGUF cache-warm first-token drops to ~0.1–0.2s; HF stays 0% cache. Long ~2k on 8B-class GGUF is ~130–140s TTFT on this CPU host — prefer Vast for that latency class.
+
+---
+
+## 9b. Vast GPU full statistic lab (catalog cycle + 27B)
+
+**Host:** Vast.ai GPU instance **32 GB VRAM** · Ollama OpenAI `/v1` via SSH local-forward (do not publish public host:port)  
+**Harness:** `test/scripts/vast_catalog_cycle_lab.py` · **Artifact:** `docs/perf-results/vast-all-models-cycle.jsonl` (models 1–6 **50/50 OK**)  
+**27B:** metrics from dedicated lab `vast-qwen38-27b-lab.jsonl` (**9/9 PASS**, `qwen3.8:27b-ctx64k`, ~20–22 GiB VRAM @ 64k); catalog-cycle suite rows merge into the same artifact when available.
+
+### Per-case metrics (GPU)
+
+| Model | Case | OK | in/out | Cache% | Wall s | VRAM MiB | Notes |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Qwen3.5-0.8B | short | Y | 15/16 | 0 | 7.1 | **2714** | Ollama `qwen3.5:0.8b` |
+| Qwen3.5-0.8B | long-2k | Y | 2669/16 | 0 | 6.3 | 2716 | vs CPU ~17s / 14s TTFT |
+| Qwen3.5-0.8B | cache-warm | Y | 29/16 | **86** | 9.2 | 2716 | Ollama prefix cache |
+| Qwen3.5-0.8B | long-8k | Y | 10558/16 | 5.9 | 9.2 | 2748 | |
+| Qwen3.5-0.8B | ocr-md | Y | 184/64 | 0 | 5.5 | 2748 | city weak on this tag |
+| Qwen3.5-0.8B | vision | Y | 806/64 | 0 | 13.9 | 2748 | |
+| Qwen3.5-0.8B | concurrency-2 | Y | — | — | 4.7 / 6.7 | 2782 | |
+| Qwen3.5-0.8B | coding | Y | 22/32 | 0 | 6.0 | 2782 | `accuracy_coding` **FAIL** — not for coding |
+| Qwen3.5-2B | short | Y | 15/16 | 0 | 6.4 | **4452** | |
+| Qwen3.5-2B | long-2k | Y | 2669/16 | 0 | 8.0 | 4454 | vs CPU ~27s |
+| Qwen3.5-2B | cache-warm | Y | 29/16 | **86** | 11.7 | 4454 | |
+| Qwen3.5-2B | long-8k | Y | 10558/16 | 5.9 | 14.9 | 4512 | |
+| Qwen3.5-2B | vision | Y | 806/64 | 0 | 9.7 | 4512 | |
+| Qwen3.5-2B | coding | Y | 22/32 | 0 | 9.9 | 4552 | `accuracy_coding` **FAIL** — not for coding |
+| Qwen3-1.7B | short | Y | 15/16 | 20 | 9.2 | **6316** | works on Vast (CPU VPS allow-list gap) |
+| Qwen3-1.7B | cache-warm | Y | 29/16 | **97** | 12.4 | 6332 | |
+| Qwen3-1.7B | long-8k | Y | 10558/16 | 25 | 18.2 | 6378 | |
+| Qwen3-1.7B | coding | Y | 21/32 | 14 | 10.0 | 6378 | `accuracy_coding` **FAIL** — not for coding |
+| Qwen3-8B | short | Y | 15/16 | 20 | 4.8 | **11308** | |
+| Qwen3-8B | long-2k | Y | 2669/16 | 0 | **8.8** | 11324 | vs CPU **141s** |
+| Qwen3-8B | cache-warm | Y | 29/16 | **97** | 8.0 | 11324 | |
+| Qwen3-8B | long-8k | Y | 10558/16 | 25 | 9.7 | 11464 | |
+| Qwen3-8B | coding | Y | 21/32 | 14 | 9.6 | 11464 | `accuracy_coding` **FAIL** @ 32 (thinking) — conditional snippets |
+| DeepSeek-R1 7B | short | Y | 8/16 | 25 | 5.2 | **8898** | |
+| DeepSeek-R1 7B | long-2k | Y | 2662/16 | 0 | **7.2** | 8898 | vs CPU **130s** |
+| DeepSeek-R1 7B | cache-warm | Y | 17/16 | **94** | 5.9 | 8898 | |
+| DeepSeek-R1 7B | long-8k | Y | 10551/16 | 25 | 7.7 | 9114 | |
+| DeepSeek-R1 7B | coding | Y | 14/32 | 14 | 4.9 | 9114 | `accuracy_coding` **FAIL** @ 32 (thinking) — conditional |
+| Llama 3.1 8B | short | Y | 15/2 | 33 | 5.6 | **13644** | |
+| Llama 3.1 8B | long-2k | Y | 2513/3 | 0.2 | **6.8** | 13646 | vs CPU **131s** |
+| Llama 3.1 8B | cache-warm | Y | 29/3 | **97** | 11.9 | 13646 | |
+| Llama 3.1 8B | long-8k | Y | 9938/4 | 25 | 9.2 | 13824 | |
+| Llama 3.1 8B | ocr-md | Y | 171/6 | 2.9 | 7.8 | 13824 | city **PASS** |
+| Llama 3.1 8B | coding | Y | 21/5 | 33 | 5.1 | 13824 | coding **PASS** — **recommended ≤8B** |
+| **Qwen3.8-27B** | short | Y | 15/37 | 0 | 13.3 | **~20–22k** | dedicated lab; ctx64k |
+| **Qwen3.8-27B** | cache-warm | Y | 48/32 | **92** | 2.9 | ~20–22k | Ollama prefix |
+| **Qwen3.8-27B** | long-2k | Y | 2669/32 | 0 | 7.3 | ~20–22k | |
+| **Qwen3.8-27B** | long-8k | Y | 10558/32 | 20 | 14.4 | ~20–22k | |
+| **Qwen3.8-27B** | ocr-md | Y | 190/47 | 0 | 4.3 | ~20–22k | city **PASS** |
+| **Qwen3.8-27B** | vision | Y | 808/101 | 0 | 7.2 | ~20–22k | |
+| **Qwen3.8-27B** | concurrency-2 | Y | — | — | 2.4 / 4.1 | ~20–22k | |
+| **Qwen3.8-27B** | tools-web_search | Y | — | — | 3.0 | ~20–22k | `tool_calls` |
+| **Qwen3.8-27B** | coding | Y | 22/32 | 0 | 8.3 | ~22.7k | cycle gate **FAIL** @ 32; DSH showed answer — **primary coding agent** |
+
+### Measured VRAM / HDD / recommended GPU class
+
+| Model | Ollama tag | Measured VRAM (resident) | Measured HDD (Ollama pull) | Min GPU | Comfortable HDD |
+| --- | --- | --- | --- | --- | --- |
+| Qwen3.5-0.8B | `qwen3.5:0.8b` | ~2.7 GB | **1.0 GB** | 6–8 GB | ≥5 GB free |
+| Qwen3.5-2B | `qwen3.5:2b` | ~4.5 GB | **2.7 GB** | 8 GB | ≥8 GB free |
+| Qwen3-1.7B | `qwen3:1.7b` | ~6.3 GB | **1.4 GB** | 8 GB | ≥5 GB free |
+| Qwen3-8B | `qwen3:8b` | ~11.3 GB | **5.2 GB** | 12 GB | ≥12 GB free |
+| DeepSeek-R1 7B | `deepseek-r1:7b` | ~9.0 GB | **4.7 GB** | 10 GB | ≥12 GB free |
+| Llama 3.1 8B | `llama3.1:8b` | ~13.6 GB | **4.9 GB** | 14 GB | ≥12 GB free |
+| **Qwen3.8 27B** | `qwen3.8:27b` (+ ctx64k) | **~20–22 GB** @ 64k | **~17 GB** (16 GB weights + ~1 GB extras) | **24 GB** | **≥40 GB** container (32 GB fills) |
+
+**HDD notes (Vast):** one-model-at-a-time cleanup kept peak use ~17 GB weights on a **32 GB** overlay; concurrent pulls or leftover blobs fill the disk. Prefer **≥40 GB** disk when hosting 27B.
+
+**HDD notes (CPU VPS `/opt/data/llm-studio`):** HF safetensors + GGUF caches are larger than Ollama Q4 pulls (multimodal 0.8B/2B + three ~5 GB GGUFs easily **≥40–80 GB** with HF hub cache). Keep **≥100 GB** when OO + all catalog weights coexist; unload/delete unused revisions.
+
+**Takeaway:** Vast cuts 8B-class long-2k wall from ~130–140s (CPU) to ~7–9s. Keep ≤8B on CPU VPS for cost; rent GPU for latency, vision speed, or **27B**. Coding: **Llama 3.1 8B** (≤8B) or **27B** (agent); skip 0.8B/1.7B/2B — see §8.1b.
+
+---
+
+## 10. Vast catalog cycle (deploy → lab → cleanup)
+
+**Procedure:** delete previous Ollama weights → `ollama pull` mapped tag → warm → suite (short/cache/long/OCR/vision?/coding/concurrency) → `ollama rm` → next  
+**Harness:** `test/scripts/vast_catalog_cycle_lab.py` · **Artifact:** `docs/perf-results/vast-all-models-cycle.jsonl`  
+**Map:** 0.8B→`qwen3.5:0.8b`, 2B→`qwen3.5:2b`, 1.7B→`qwen3:1.7b`, 8B→`qwen3:8b`, R1→`deepseek-r1:7b`, Llama→`llama3.1:8b`, 27B→`qwen3.8:27b` (+ ctx64k alias)  
+**Coverage:** models 1–6 in cycle JSONL; **27B** also covered by dedicated lab (**9/9** — §9b / §7).
+
+Full case table + VRAM: **§9b**.
+
+---
+
+## 7. Vast GPU lab — Qwen3.8 27B
+
+**Host:** Vast.ai GPU instance **32 GB VRAM** · Ollama `qwen3.8:27b-ctx64k` (`num_ctx=65536`)  
+**API:** OpenAI-compatible Ollama on the GPU instance (set `VAST_TEST_BASE_URL` / DSH `vast.baseURL` locally; do not commit host:port)  
+**Catalog:** `Qwen/Qwen3.8-27B` with `deployment: vast-ollama` (not loaded on CPU VPS)  
+**Artifact:** `docs/perf-results/vast-qwen38-27b-lab.jsonl` · harness `test/scripts/vast_qwen38_27b_lab.py`
+
+| Gate | Result | Tokens in/out | Cached | Wall | Notes |
+| --- | --- | --- | --- | --- | --- |
+| short | **PASS** | 15/37 | 0 | 13.3s | content `OK` (thinking then answer) |
+| cache-cold | **PASS** | 48/32 | 0 | 2.2s | hit length on thinking |
+| cache-warm | **PASS** | 48/32 | **44** (~92%) | 2.9s | Ollama prefix cache works |
+| long ~2k | **PASS** | 2669/32 | 0 | 7.3s | |
+| long ~8–10k | **PASS** | 10558/32 | **2157** | 14.4s | partial prefix reuse |
+| OCR md (Work/test docs) | **PASS** | 190/47 | 0 | 4.3s | **Ho Chi Minh City** grounded |
+| vision (apple.jpg) | **PASS** | 808/101 | 0 | 7.2s | describes apples/basket |
+| concurrency ×2 | **PASS** | — | — | 2.4s / 4.1s | both 200 (serialized on 1 GPU) |
+| tools `web_search` required | **PASS** | — | — | 3.0s | `finish_reason=tool_calls` (1 call) |
+
+**VRAM (resident):** ~20–22 GiB / 32 GiB with 64k ctx.  
+**Disk:** need ≥40 GB container (32 GB fills with one 17 GB model + downloads).
+
+### DSH auto-compact
+
+Observed on DSH with this Vast model: when prompt hit **32769 > n_ctx 32768** (before ctx64k fix), UI raised `CONTEXT_WINDOW_EXCEEDED` and **compaction failed** (“could not produce a useful summary”). After switching to **`qwen3.8:27b-ctx64k`** + DSH `contextWindow: 65536`, new sessions should avoid the 32k wall. Compact still depends on DSH summarizer quality under tool+image noise — treat as **partial / unreliable**, not a hard guarantee.
+
+---
+
+
+### DSH Standard-mode continuous compact flood (homelab)
+
+Rules: `rule/DSH_COMPACT_FLOOD.md` · harness `test/scripts/dsh_web_compact_flood.sh` · Cursor rule `.cursor/rules/dsh-compact-flood.mdc`.  
+Must use **Standard** mode (Minimal has no compaction). Artifact: `docs/perf-results/dsh-web-compact-flood.jsonl`.  
+Detection requires explicit UI phrases (`Context compaction` / compacted conversation), not bare substring `compact`.
+
+
+## 8. Hardware recommendation (real)
+
+Two deployment lanes: **CPU VPS** (llm-studio, one resident model) and **Vast GPU**
+(Ollama OpenAI `/v1`, DSH second provider via SSH local-forward — do not commit
+public host:port). Pick per model below.
+
+### 8.1 Per-model — CPU VPS vs Vast (RAM / VRAM / HDD)
+
+| Model | CPU RAM | Vast VRAM (measured) | HDD weights (measured Ollama pull) | CPU VPS HDD (HF/GGUF cache, approx) |
+| --- | --- | --- | --- | --- |
+| Qwen3.5-0.8B | 4c / **16 GiB** host | **~2.7 GB** | **1.0 GB** | ~2–4 GB HF |
+| Qwen3.5-2B | 4c / **16 GiB** | **~4.5 GB** | **2.7 GB** | ~4–6 GB HF |
+| Qwen3-1.7B | 4c / **12–16 GiB** | **~6.3 GB** | **1.4 GB** | ~3–5 GB HF |
+| Qwen3-8B Q4 | 4c / **16+ GiB** | **~11.3 GB** | **5.2 GB** | ~5 GB GGUF |
+| DeepSeek-R1 7B Q4 | 4c / **16+ GiB** | **~9.0 GB** | **4.7 GB** | ~4.5–5 GB GGUF |
+| Llama 3.1 8B Q4 | 4c / **16+ GiB** | **~13.6 GB** | **4.9 GB** | ~4.5–5 GB GGUF |
+| **Qwen3.8 27B Q4** | **not on 16 GiB CPU** | **~20–22 GB** @ 64k | **~17 GB** | n/a (Vast only) |
+
+| Lane | Min HDD | Comfortable HDD |
+| --- | --- | --- |
+| CPU VPS (all ≤8B catalog + OO) | 80 GB | **100–120 GB** under `/opt/data/llm-studio` |
+| Vast (one model, cleanup between) | 20 GB for ≤8B | **≥40 GB** if pulling **27B** (~17 GB) on a 32 GB overlay |
+
+### 8.1b Coding fit (per catalog model)
+
+Gate: Vast cycle `…/coding` — exact reply `return a + b` (`max_tokens=32`, thinking may burn the budget). Artifact: `vast-all-models-cycle.jsonl` (`accuracy_coding`). DSH Minimal coding spot-check for 27B.
+
+| Model | Lab coding gate | Coding recommendation |
+| --- | --- | --- |
+| Qwen3.5-0.8B | **FAIL** (empty / `length`) | **Not recommended** — chat/vision only; too small for coding agents |
+| Qwen3.5-2B | **FAIL** (empty / `length`) | **Not recommended** — chat/vision only; not a coding agent |
+| Qwen3-1.7B | **FAIL** (empty / `length`) | **Not recommended** — text smoke / short chat only |
+| Qwen3-8B Q4 | **FAIL** @ 32 out (thinking) | **Conditional** — OK for snippets if reasoning **off** and higher `max_tokens`; not the primary coding pick on CPU |
+| DeepSeek-R1 7B Q4 | **FAIL** @ 32 out (thinking) | **Conditional** — better for hard reasoning-style coding with a **large** token budget; avoid for exact one-line replies |
+| Llama 3.1 8B Q4 | **PASS** (`return a + b`, stop) | **Recommended (≤8B)** — best measured exact coding reply on Vast among catalog ≤8B |
+| **Qwen3.8 27B Q4** | Cycle **FAIL** @ 32 out; DSH coding showed `return a + b` | **Recommended (primary coding agent on Vast)** — use enough `max_tokens` / turn thinking down for short exact replies |
+
+**Pick:** daily ≤8B coding → **Llama 3.1 8B**; serious DSH/coding-agent work → **Qwen3.8 27B** on Vast. Do not point coding agents at 0.8B / 1.7B / 2B.
+
+Full dual-lane case + VRAM/HDD tables: §9 (CPU) + §9b (Vast).
+
+### 8.2 Shared host rules
+
+| Lane | Spec | Notes |
+| --- | --- | --- |
+| CPU VPS (llm-studio) | Keep **`LLM_STUDIO_API_CPUS=3.0` / 3 threads** on 4 vCPU | Leave 1 core for OO / OTel / Traefik / Docker |
+| Vast (any catalog model) | On-demand GPU; container disk **≥40 GB** if pulling ≥17 GB weights | One Ollama model resident; unload/delete blobs before switching large pulls |
+| DSH | `contextWindow` must match runtime ctx (`num_ctx` / catalog `context_tokens` room) | Compact is **partial** — fails if overflowed before summarizer runs |
+| Cache | GGUF / Ollama: cross-request prefix cache **yes**; HF multimodal: **0%** across HTTP turns | Same on CPU or Vast for HF |
+
+### 8.3 Vast sizing cheat-sheet (all models)
+
+| VRAM class | Fits well | Avoid |
+| --- | --- | --- |
+| 8–12 GB | 0.8B–2B HF; light Q4 7–8B at modest `num_ctx` | 27B; large `num_ctx` on 8B |
+| 16 GB | All ≤8B Q4 + HF 2B at useful ctx | 27B at 64k |
+| 24 GB | 27B Q4 at ≤32k ctx | Prefer 32 GB for **64k** |
+| **32 GB** | **27B Q4 @ 64k** (measured) + room to swap smaller models | Filling disk with partial pulls |
+
+**Recommendation:** keep daily chat/tools on CPU VPS for ≤8B; rent Vast when you need (a) **27B**, (b) **long context** latency, or (c) **vision/OCR** speed. Point DSH `vast` at a **localhost SSH forward**, not a committed public URL.
+
+---
+
+## 11. Scripts
 
 | Make target | Script |
 | --- | --- |
@@ -161,3 +381,9 @@ Gate: `make test-vision` — **PASS 8/8** (2026-09-23).
 | `make test-models` | `test/scripts/all_models_prompt_contract.py` |
 | `make test-realworld` | `test/scripts/realworld_api_contract.py` |
 | `make test-dsh` | `test/scripts/dsh_harness_contract.py` |
+| *(manual Vast cycle)* | `test/scripts/vast_catalog_cycle_lab.py` |
+| *(manual Vast 27B)* | `test/scripts/vast_qwen38_27b_lab.py` |
+| *(manual VPS full)* | `test/scripts/full_model_statistic_lab.py` |
+| *(manual ctx ladder)* | `test/scripts/context_max_ladder_lab.py` |
+| *(manual coding)* | `test/scripts/coding_sim_lab.py` |
+| *(manual DSH web)* | `test/scripts/dsh_web_full_matrix.py` |
