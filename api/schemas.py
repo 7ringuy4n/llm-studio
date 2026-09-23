@@ -242,3 +242,13 @@ class ChatCompletionRequest(BaseModel):
             if len(value) > 4 or any(not item or len(item) > 256 for item in value):
                 raise ValueError("stop must contain 1-4 non-empty strings of <= 256 characters")
         return value
+
+
+class CancelGenerationRequest(BaseModel):
+    """Abort an in-flight chat completion by client-visible id."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    correlation_id: str | None = Field(default=None, min_length=1, max_length=128)
+    request_id: str | None = Field(default=None, min_length=1, max_length=128)
+    session_id: str | None = Field(default=None, min_length=1, max_length=128)

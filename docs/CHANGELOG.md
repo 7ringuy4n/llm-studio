@@ -1,3 +1,42 @@
+## 2026-09-23 — Hardware: CPU VPS + Vast per model
+
+- `docs/HARDWARE.md` and `model-statistic-report.md` §8 now list **both** CPU VPS
+  and Vast GPU min/comfortable sizing for every catalog model (not only 27B).
+- 27B remains Vast-only; ≤8B can stay on CPU or move to 12–16 GB GPU for latency.
+
+## 2026-09-23 — Qwen3.8 27B on Vast + catalog deployment field
+
+- `configs/models.json`: `Qwen/Qwen3.8-27B` with `deployment: vast-ollama` /
+  `ollama_model: qwen3.8:27b-ctx64k` (not loadable via CPU
+  `MODEL_ALLOWED_MODELS`).
+- Lab harness `test/scripts/vast_qwen38_27b_lab.py`; results in
+  `docs/perf-results/vast-qwen38-27b-lab.jsonl` (short/cache/long/OCR/vision/
+  concurrency/tools — **9/9 PASS** on 32 GB VRAM).
+- Hardware + statistic report updated for per-model GPU vs CPU guidance.
+
+## 2026-09-23 — Cache hit only on GGUF (HF multimodal always 0%)
+
+- Investigated DSH session `session-96445663-…`: multi-turn same session, but
+  `cache_hit_percent` stayed `0.0` on every turn.
+- Root cause: resident model was HF **multimodal** `Qwen/Qwen3.5-0.8B`. Cross-
+  request prompt prefix cache (`LlamaRAMCache` / `MODEL_KV_CACHE_BYTES`) applies
+  only to `backend=gguf`. HF `use_cache=True` is **within one generation** only.
+- Session affinity was fine (stable `X-Session-ID`). Live probe: 0.8B turn2
+  **0%**; `Qwen/Qwen3-8B` turn2 **~26%** with `X-KV-Cache: prompt-and-generation`.
+- History: `history/2026-09-23/cache-miss-session-96445663.md`.
+
+## 2026-09-23 — Generation cancel on Stop / disconnect
+
+- Cooperative cancel for in-flight `/v1/chat/completions`: client disconnect
+  (DeepSeek Harness Stop / aborted fetch) flips a per-request cancel token;
+  HF `StoppingCriteria` and GGUF logits callbacks stop the VPS worker instead
+  of finishing the full generation.
+- Explicit `POST /v1/generation/cancel` with `correlation_id` / `request_id` /
+  `session_id` (or matching headers) for clients that keep the socket open.
+- Request timeout also requests cancel (no longer only holds the concurrency
+  slot until the orphaned thread exits).
+- Offline unit: `test/scripts/cancellation_unit.py` (wired into `run_all.sh`).
+
 ## 2026-09-23 — ~10k-token long prompts + vision simple/complicated
 
 - Long-prompt labs target **~10k tokens** of tool-trace style context

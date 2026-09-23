@@ -3,6 +3,31 @@
 Narrative companion to `CHANGELOG.md`. Prefer CHANGELOG for bullet facts;
 this file records why decisions landed and how the VPS is meant to be used.
 
+## 2026-09-23 — Why DSH shows 0% cache on Qwen3.5-0.8B
+
+OpenObserve `cache_hit_percent` measures **cross-request prompt prefix reuse**,
+not “same chat” alone. That reuse is implemented for **GGUF** via
+`LlamaRAMCache`. Multimodal HF models (`Qwen3.5-0.8B` / `2B`) only keep KV for
+the current `generate()` call, so every turn re-prefills; first-token time
+grows with history. Session
+`session-96445663-45dd-4694-bedd-733b78f67079` had correct session affinity and
+nine completed turns at **0%** cache — expected for that backend. Switch to a
+GGUF living model (e.g. `Qwen/Qwen3-8B`) to see non-zero `cached_input_tokens`.
+
+## 2026-09-23 — Stop must cancel VPS generation
+
+DeepSeek Harness **Stop** (and aborted HTTP clients) previously only stopped
+the UI stream while the single resident model on the VPS kept generating until
+`max_tokens` / EOS. That wasted CPU and blocked the concurrency slot.
+
+Fix is **cooperative cancel**: disconnect watcher + optional
+`POST /v1/generation/cancel` set a `CancelToken`; HF `StoppingCriteria` and
+GGUF logits processors abort the worker loop. Timeouts now request the same
+cancel instead of only orphaning a thread behind a held slot.
+
+Clients should keep sending a stable `X-Correlation-ID` so an explicit cancel
+can target the same in-flight job if the socket is not torn down.
+
 ## 2026-09-23 — Real-world readiness: tokens, docs, CPU, tools, affinity
 
 LLM Studio is treated as a **private production-adjacent inference API** for

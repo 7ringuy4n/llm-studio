@@ -1,0 +1,40 @@
+{
+  "results": [
+    {
+      "model": "Qwen/Qwen3.5-0.8B",
+      "label": "Qwen/Qwen3.5-0.8B::warm1_effort_off_nocache",
+      "effort": "off",
+      "wall_ms": 3923,
+      "prompt_tokens": 101,
+      "completion_tokens": 29,
+      "cached_tokens": 0,
+      "cache_hit_percent": 0.0,
+      "first_token_ms": "446.7",
+      "last_token_ms": "3695.2"
+    },
+    {
+      "model": "Qwen/Qwen3.5-0.8B",
+      "label": "Qwen/Qwen3.5-0.8B::warm2_effort_off_expect_cache",
+      "effort": "off",
+      "wall_ms": 3998,
+      "prompt_tokens": 101,
+      "completion_tokens": 29,
+      "cached_tokens": 0,
+      "cache_hit_percent": 0.0,
+      "first_token_ms": "647.9",
+      "last_token_ms": "3882.7"
+    },
+    {
+      "model": "Qwen/Qwen3.5-0.8B",
+      "label": "Qwen/Qwen3.5-0.8B::switch_effort_low_expect_miss",
+      "effort": "low",
+      "wall_ms": 5940,
+      "prompt_tokens": 99,
+      "completion_tokens": 48,
+      "cached_tokens": 0,
+      "cache_hit_percent": 0.0,
+      "first_token_ms": "507.9",
+      "last_token_ms": "5745.9"
+    }
+  ]
+}

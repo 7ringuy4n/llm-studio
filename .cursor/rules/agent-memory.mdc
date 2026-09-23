@@ -1,0 +1,31 @@
+<!-- BEGIN agent-memory -->
+# Shared agent memory
+
+This project keeps portable shared memory in `.agent-memory/`. Markdown is the
+source of truth; the SQLite FTS5 index is a disposable cache. Any coding agent
+(Codex, Cursor, OpenCode, Antigravity, DeepSeek Harness, ...) reads and writes
+the same files.
+
+## Before work
+
+1. Read `.agent-memory/INDEX.md` and `.agent-memory/task_on_progress.md`.
+2. Read `.agent-memory/HISTORY.md` when the task touches architecture or major behavior.
+3. Search memory: `agent-memory search "<keywords>"`. If the CLI is unavailable,
+   fall back to `rg -n -i "<keywords>" .agent-memory/`.
+4. Read only the top few relevant files. Do not load the whole folder.
+
+## During work
+
+- Keep `.agent-memory/task_on_progress.md` current.
+- Record important discoveries, constraints, failed approaches and decisions.
+- Never store secrets; redact with `<REDACTED>` or `<ENV_VAR_NAME>`.
+
+## After work
+
+1. Update `.agent-memory/task_on_progress.md`.
+2. Append major changes to `.agent-memory/HISTORY.md`.
+3. Write a session note when useful: `agent-memory new session "<title>"`.
+4. Promote memories that change future behavior: `agent-memory promote <id> <type>`.
+5. Rebuild the index: `agent-memory rebuild`.
+
+<!-- END agent-memory -->

@@ -49,12 +49,16 @@ Read the guides in this order:
 15. [DSH + Tavily web search/fetch](15-dsh-tavily-web.md) — wire
     `dsh-web-search-free` so DSH executes search/fetch via Tavily.
 16. [CPU performance tuning](16-cpu-performance.md) — threads, batch, cache,
-    3 vs 4 vCPU matrix vs the model-statistic baseline.
-17. [Model statistic report](perf-results/model-statistic-report.md) — Markdown
+    and measured 3-vs-4 vCPU guidance.
+17. [VPS update from main](17-vps-update-from-main.md) — pull `main` and redeploy
+    after labs PASS.
+18. [Model statistic report](perf-results/model-statistic-report.md) — Markdown
     report shaped like `model-statistic 2.docx` (reasoning matrix, short/long
     all-models lab, accuracy/cost/cache notes).
-18. [HTML performance tables](perf-results/model-statistic-tables.html) — sortable
+19. [HTML performance tables](perf-results/model-statistic-tables.html) — sortable
     browser view of Model / Prompt / Tokens / Cache% / First / Last / Total.
+20. [Generation cancel](18-generation-cancel.md) — Stop / disconnect aborts VPS
+    workers; `POST /v1/generation/cancel`.
 
 The generated VPS inventory remains in [environment.md](environment.md).
 

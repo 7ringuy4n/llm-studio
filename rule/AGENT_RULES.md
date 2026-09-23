@@ -49,6 +49,10 @@ Never sacrifice correctness or isolation merely to make a test pass.
   `history/task_on_progress.md`.
 - When running tests, print progress as `running test case N/M`. If a
   failure is a real core bug, fix the core and re-run.
+- **Client Stop / abort:** generation must be cancellable on the VPS. Prefer
+  HTTP disconnect (DSH Stop / aborted fetch). If the socket stays open, call
+  `POST /v1/generation/cancel` with the same `X-Correlation-ID` (or
+  request/session id). Never leave orphaned long generations after Stop.
 - **All living LLM models:** live / harness / browser lab gates must cover
   every model listed under the DSH `homelab` provider (and matching
   `configs/models.json` living entries), not only the default 0.8B.
@@ -59,12 +63,29 @@ Never sacrifice correctness or isolation merely to make a test pass.
 - **Vision:** for vision-capable models, run **simple** and **complicated**
   image cases (objects + nature wallpaper) via
   `test/scripts/vision_contract.py`.
-- **DSH modes:** harness labs run both **`minimal`** and **`standard`** presets
-  (`agent-presets.default`), via `test/scripts/dsh_harness_contract.py`.
+- **OCR / office docs:** run `test/scripts/ocr_docs_contract.py` against real
+  files under `Documents/Work/test docs/OCR` (override with
+  `LLM_STUDIO_OCR_ROOT`): **pdf, docx, md, xlsx, csv, pptx**, plus jpg/png
+  vision reads. Assert grounded answers from extracted text / images.
+- **DSH modes:** harness / browser labs run **`minimal`**, **`minimal + web`**,
+  and **`standard`** presets (`agent-presets.default` / Minimal + Web), via
+  `test/scripts/dsh_harness_contract.py` and BrowserSkill when authorized.
+- **DSH auto-compact (web):** continuous-send flood in **Standard mode** on
+  **homelab** until compact UI or overflow — `rule/DSH_COMPACT_FLOOD.md` +
+  `test/scripts/dsh_web_compact_flood.sh`. Minimal mode must not be used as
+  the compact SoT (compaction absent).
+- **Reasoning × cache:** live labs must cover **both cache hit and no-cache**
+  paths when switching `reasoning_effort` (same shared prefix, change effort).
+  Use `test/scripts/reasoning_cache_contract.py` (warm same-effort → expect
+  cache%; switch effort → expect miss / reduced hit). Browser / DSH UI labs
+  should also record Cache hit % when changing Effort.
 - Prefer `test/scripts/all_models_prompt_contract.py`,
   `test/scripts/realworld_api_contract.py`,
-  `test/scripts/dsh_harness_contract.py`, and
-  `test/scripts/vision_contract.py`.
+  `test/scripts/dsh_harness_contract.py`,
+  `test/scripts/reasoning_cache_contract.py`,
+  `test/scripts/ocr_docs_contract.py`,
+  `test/scripts/vision_contract.py`, and
+  `test/scripts/dsh_web_compact_flood.sh` (bsk Standard compact).
 
 ------------------------------------------------------------------------
 
@@ -90,7 +111,11 @@ Dated folders under `history/YYYY-MM-DD/` must include Technical detail
 - Offline: `./test/run.sh` (or `make test`) / `make test-all`
 - Live (VPN): **all living models**, short+long
   (`test/scripts/all_models_prompt_contract.py`)
+- Live (VPN): reasoning-effort **cache hit + miss**
+  (`test/scripts/reasoning_cache_contract.py`)
 - DSH harness: `test/scripts/dsh_harness_contract.py` (headless, all models)
+- DSH web compact: `test/scripts/dsh_web_compact_flood.sh` (**Standard** mode,
+  bsk; rules in `rule/DSH_COMPACT_FLOOD.md`)
 - Optional: `test/scripts/web_search_contract.py`
 - Browser checks (OpenObserve / DSH) use the operator browser skill when
   authorized; exercise **all** living models in the UI when that lab is

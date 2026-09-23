@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""DSH headless lab: minimal + standard presets × living models × short/long real-world prompts.
+"""DSH headless lab: minimal + minimal-web + standard × living models × short/long.
 
 Rewrites ~/.dsh/settings.yaml agent-default-model and agent-presets.default, restores after.
 Loads HOMELAB_API_KEY from credentials without printing it.
@@ -30,7 +30,7 @@ HOMELAB_MODELS = (
     "deepseek-ai/DeepSeek-R1-Distill-Qwen-7B",
     "meta-llama/Llama-3.1-8B-Instruct",
 )
-PRESETS = ("minimal", "standard")
+PRESETS = ("minimal", "minimal-web", "standard")
 SETTINGS = Path.home() / ".dsh" / "settings.yaml"
 CREDENTIALS = Path.home() / ".dsh" / ".credentials.yaml"
 
