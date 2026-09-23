@@ -30,7 +30,7 @@ from api.model_runtime import GenerationResult
 from api.tracing import new_trace_context
 
 
-def fake_generate(request) -> GenerationResult:
+def fake_generate(request, cancel_token=None) -> GenerationResult:
     time.sleep(0.03)
     content = request.messages[-1].content
     return GenerationResult(

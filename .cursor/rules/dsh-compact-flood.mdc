@@ -1,0 +1,19 @@
+---
+description: DSH web Standard-mode continuous compact flood test rules (homelab/bsk)
+globs: test/scripts/dsh_web_compact_flood.sh,rule/DSH_COMPACT_FLOOD.md,docs/perf-results/dsh-web-compact-flood.jsonl
+alwaysApply: false
+---
+
+# DSH Standard-mode compact flood
+
+When lab-temp or the user asks to verify DSH auto-compact:
+
+1. Use **BrowserSkill (`bsk`)**, not DSH headless.
+2. Mode must be **Standard** (Minimal has no compaction).
+3. Prefer **homelab** `Qwen/Qwen3.5-0.8B` so Vast catalog cycles keep the GPU.
+4. Run `test/scripts/dsh_web_compact_flood.sh` with `running test case N/M`.
+5. Keep each paste ≤ ~3500 chars; accumulate via many turns.
+6. Record JSONL under `docs/perf-results/dsh-web-compact-flood.jsonl`.
+7. Score: compact UI = pass; overflow without compact = fail/partial; never publish Vast public host:port.
+
+Full rules: `rule/DSH_COMPACT_FLOOD.md`.

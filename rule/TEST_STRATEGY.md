@@ -13,6 +13,8 @@ Prove **invariants**, not raw test count:
 - Tool-call contract (`web_search` emission only — DSH executes search)
 - Short-prompt and long-prompt chat behavior on live API **for every living model**
 - DSH harness headless short+long for every `homelab` model
+- **DSH web Standard-mode continuous compact flood** (homelab / bsk) —
+  see `rule/DSH_COMPACT_FLOOD.md`
 - CPU quota defaults (3.0 / 3 threads)
 
 ## 2. Layout

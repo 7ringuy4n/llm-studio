@@ -66,7 +66,7 @@ tbody tr:hover { background: #e8f5ef; }
 <body>
 <main>
   <h1>LLM Studio performance tables</h1>
-  <p class="meta">Generated 2026-09-23 06:46 UTC · template columns match model-statistic report · CPU default 3.0/3</p>
+  <p class="meta">Generated 2026-09-23 07:05 UTC · template columns match model-statistic report · CPU default 3.0/3</p>
   <div class="panel">
     <table>
       <thead>
@@ -124,7 +124,22 @@ tbody tr:hover { background: #e8f5ef; }
 <tr><td>matrix-3vcpu</td><td>Llama 3.1 8B</td><td>reasoning:high</td><td>73/3</td><td>100.0</td><td>0.114s</td><td>0.449s</td><td>0.628s</td></tr>
 <tr><td>matrix-3vcpu</td><td>Llama 3.1 8B</td><td>reasoning:xhigh</td><td>73/3</td><td>100.0</td><td>0.113s</td><td>0.446s</td><td>0.559s</td></tr>
 <tr><td>matrix-3vcpu</td><td>Llama 3.1 8B</td><td>reasoning:max</td><td>73/3</td><td>100.0</td><td>0.126s</td><td>0.516s</td><td>0.646s</td></tr>
-      </tbody>
+      <tr><td>api-reasoning-cache</td><td>Qwen/Qwen3.5-0.8B</td><td>warm1_effort_off_nocache</td><td>101/29</td><td>0.0</td><td>1.624s</td><td>4.972s</td><td>14.850s</td></tr>
+<tr><td>api-reasoning-cache</td><td>Qwen/Qwen3.5-0.8B</td><td>warm2_effort_off_expect_cache</td><td>101/29</td><td>0.0</td><td>0.557s</td><td>4.258s</td><td>4.354s</td></tr>
+<tr><td>api-reasoning-cache</td><td>Qwen/Qwen3.5-0.8B</td><td>switch_effort_low_expect_miss</td><td>99/48</td><td>0.0</td><td>0.604s</td><td>6.142s</td><td>6.230s</td></tr>
+<tr><td>api-ocr-work</td><td>Qwen/Qwen3.5-0.8B</td><td>ocr-md:message.md</td><td>225/21</td><td>0.0</td><td>0.884s</td><td>3.296s</td><td>3.453s</td></tr>
+<tr><td>api-ocr-work</td><td>Qwen/Qwen3.5-0.8B</td><td>ocr-pdf:hcmc_weather_report.pdf</td><td>225/29</td><td>0.0</td><td>0.815s</td><td>3.646s</td><td>3.738s</td></tr>
+<tr><td>api-ocr-work</td><td>Qwen/Qwen3.5-0.8B</td><td>ocr-docx:hcmc_weather.docx</td><td>350/22</td><td>0.0</td><td>1.130s</td><td>3.416s</td><td>3.600s</td></tr>
+<tr><td>api-ocr-work</td><td>Qwen/Qwen3.5-0.8B</td><td>ocr-pptx:hcmc_weather.pptx</td><td>200/22</td><td>0.0</td><td>0.804s</td><td>3.721s</td><td>3.817s</td></tr>
+<tr><td>api-ocr-work</td><td>Qwen/Qwen3.5-0.8B</td><td>ocr-xlsx:usage-events-2026-08-21.xlsx</td><td>1090/30</td><td>0.0</td><td>4.968s</td><td>8.810s</td><td>8.936s</td></tr>
+<tr><td>api-ocr-work</td><td>Qwen/Qwen3.5-0.8B</td><td>ocr-csv:usage-events-2026-08-21.csv</td><td>401/18</td><td>0.0</td><td>1.467s</td><td>3.601s</td><td>3.693s</td></tr>
+<tr><td>api-ocr-work</td><td>Qwen/Qwen3.5-0.8B</td><td>ocr-image-jpg:7b2784ef8b450a1b5354.jpg</td><td>410/38</td><td>0.0</td><td>2.978s</td><td>7.751s</td><td>8.023s</td></tr>
+<tr><td>api-ocr-work</td><td>Qwen/Qwen3.5-0.8B</td><td>ocr-image-png:tired_man_test.png</td><td>612/31</td><td>0.0</td><td>4.188s</td><td>8.295s</td><td>8.598s</td></tr>
+<tr><td>dsh-browser</td><td>Llama 3.1 8B Instruct Q4_K_M</td><td>minimal/short-vpn-health</td><td>391/n/a</td><td>0</td><td>n/a</td><td>n/a</td><td>38s</td></tr>
+<tr><td>dsh-browser</td><td>Qwen/Qwen3.5-0.8B</td><td>minimal/short-vpn-health</td><td>490/n/a</td><td>0</td><td>n/a</td><td>n/a</td><td>4s</td></tr>
+<tr><td>dsh-browser</td><td>Qwen/Qwen3.5-0.8B</td><td>minimal-web/short-vpn-health</td><td>739/n/a</td><td>0</td><td>n/a</td><td>n/a</td><td>7s</td></tr>
+<tr><td>dsh-browser</td><td>Qwen3.5 2B</td><td>minimal/short-vpn-health</td><td>490/n/a</td><td>0</td><td>n/a</td><td>n/a</td><td>20s</td></tr>
+</tbody>
     </table>
   </div>
   <p class="note">Sources: <code>test/reports/*-perf.json</code>, <code>docs/perf-results/comparison.md</code> (3 vCPU matrix). Markdown narrative: <code>model-statistic-report.md</code>.</p>

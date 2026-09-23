@@ -63,12 +63,30 @@ export LLM_STUDIO_TEST_BASE_URL=http://10.8.0.1:18080/v1
 python3 test/scripts/all_models_prompt_contract.py
 ```
 
-DeepSeek Harness (headless, all homelab models, short + long):
+DeepSeek Harness (headless, all homelab models, short + long; presets
+`minimal`, `minimal-web`, `standard`):
 
 ```bash
 make test-dsh
 # or
 python3 test/scripts/dsh_harness_contract.py
+```
+
+Reasoning-effort **cache hit + miss** (same prefix, switch effort):
+
+```bash
+make test-reasoning-cache
+# or
+python3 test/scripts/reasoning_cache_contract.py
+```
+
+OCR / office docs from `Documents/Work/test docs/OCR` (pdf, docx, md, xlsx,
+csv, pptx + jpg/png vision). Override root with `LLM_STUDIO_OCR_ROOT`:
+
+```bash
+make test-ocr
+# or
+python3 test/scripts/ocr_docs_contract.py
 ```
 
 Single-model API smoke and tool contract:
