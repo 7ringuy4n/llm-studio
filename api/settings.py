@@ -52,6 +52,10 @@ class Settings:
     model_idle_unload_seconds: int
     model_gguf_context_tokens: int
     model_kv_cache_bytes: int
+    model_gguf_n_batch: int
+    model_gguf_n_ubatch: int
+    model_gguf_use_mmap: bool
+    model_gguf_use_mlock: bool
     model_revision: str
     model_load_on_start: bool
     model_context_tokens: int
@@ -98,6 +102,12 @@ class Settings:
             model_kv_cache_bytes=_nonnegative_int(
                 "MODEL_KV_CACHE_BYTES", 2_147_483_648
             ),
+            # Larger n_batch speeds prompt eval on CPU; keep ubatch <= batch.
+            model_gguf_n_batch=_positive_int("MODEL_GGUF_N_BATCH", 512, maximum=4096),
+            model_gguf_n_ubatch=_positive_int("MODEL_GGUF_N_UBATCH", 512, maximum=4096),
+            model_gguf_use_mmap=_boolean("MODEL_GGUF_USE_MMAP", True),
+            # mlock can reduce page-fault stalls but competes for RAM on 16 GiB.
+            model_gguf_use_mlock=_boolean("MODEL_GGUF_USE_MLOCK", False),
             model_revision=os.getenv("MODEL_REVISION", "main"),
             model_load_on_start=_boolean("MODEL_LOAD_ON_START", False),
             model_context_tokens=model_context_tokens,
@@ -106,7 +116,7 @@ class Settings:
                 model_context_tokens,
                 maximum=model_context_tokens,
             ),
-            max_new_tokens=_positive_int("MODEL_MAX_NEW_TOKENS", 2048, maximum=8192),
+            max_new_tokens=_positive_int("MODEL_MAX_NEW_TOKENS", 32768, maximum=131072),
             min_new_tokens=_positive_int("MODEL_MIN_NEW_TOKENS", 16, maximum=128),
             cpu_threads=_positive_int("LLM_STUDIO_CPU_THREADS", 3, maximum=16),
             request_timeout_seconds=_positive_int(

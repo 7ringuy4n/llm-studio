@@ -1,10 +1,82 @@
 {
   "models": [
-    {"alias":"qwen35-0.8b","id":"Qwen/Qwen3.5-0.8B","name":"Qwen3.5 0.8B","backend":"multimodal","revision":"main","context_tokens":262144,"max_new_tokens":2048,"dtype":"auto","vision":true,"reasoning":true},
-    {"alias":"qwen35-2b","id":"Qwen/Qwen3.5-2B","name":"Qwen3.5 2B","backend":"multimodal","revision":"main","context_tokens":262144,"max_new_tokens":2048,"dtype":"auto","vision":true,"reasoning":true},
-    {"alias":"qwen3-1.7b","id":"Qwen/Qwen3-1.7B","name":"Qwen3 1.7B (text only)","backend":"causal-lm","revision":"main","context_tokens":32768,"max_new_tokens":2048,"dtype":"auto","vision":false,"reasoning":true},
-    {"alias":"qwen3-8b","id":"Qwen/Qwen3-8B","name":"Qwen3 8B Q4_K_M","backend":"gguf","revision":"main","context_tokens":40960,"max_new_tokens":2048,"dtype":"q4_k_m","vision":false,"reasoning":true,"repo_id":"Qwen/Qwen3-8B-GGUF","gguf_filename":"Qwen3-8B-Q4_K_M.gguf"},
-    {"alias":"deepseek-r1-7b","id":"deepseek-ai/DeepSeek-R1-Distill-Qwen-7B","name":"DeepSeek R1 Distill Qwen 7B Q4_K_M","backend":"gguf","revision":"main","context_tokens":131072,"max_new_tokens":2048,"dtype":"q4_k_m","vision":false,"reasoning":true,"repo_id":"bartowski/DeepSeek-R1-Distill-Qwen-7B-GGUF","gguf_filename":"DeepSeek-R1-Distill-Qwen-7B-Q4_K_M.gguf"},
-    {"alias":"llama31-8b","id":"meta-llama/Llama-3.1-8B-Instruct","name":"Llama 3.1 8B Instruct Q4_K_M","backend":"gguf","revision":"main","context_tokens":131072,"max_new_tokens":2048,"dtype":"q4_k_m","vision":false,"reasoning":false,"repo_id":"bartowski/Meta-Llama-3.1-8B-Instruct-GGUF","gguf_filename":"Meta-Llama-3.1-8B-Instruct-Q4_K_M.gguf"}
+    {
+      "alias": "qwen35-0.8b",
+      "id": "Qwen/Qwen3.5-0.8B",
+      "name": "Qwen3.5 0.8B",
+      "backend": "multimodal",
+      "revision": "main",
+      "context_tokens": 262144,
+      "max_new_tokens": 32768,
+      "dtype": "auto",
+      "vision": true,
+      "reasoning": true
+    },
+    {
+      "alias": "qwen35-2b",
+      "id": "Qwen/Qwen3.5-2B",
+      "name": "Qwen3.5 2B",
+      "backend": "multimodal",
+      "revision": "main",
+      "context_tokens": 262144,
+      "max_new_tokens": 32768,
+      "dtype": "auto",
+      "vision": true,
+      "reasoning": true
+    },
+    {
+      "alias": "qwen3-1.7b",
+      "id": "Qwen/Qwen3-1.7B",
+      "name": "Qwen3 1.7B (text only)",
+      "backend": "causal-lm",
+      "revision": "main",
+      "context_tokens": 32768,
+      "max_new_tokens": 16384,
+      "dtype": "auto",
+      "vision": false,
+      "reasoning": true
+    },
+    {
+      "alias": "qwen3-8b",
+      "id": "Qwen/Qwen3-8B",
+      "name": "Qwen3 8B Q4_K_M",
+      "backend": "gguf",
+      "revision": "main",
+      "context_tokens": 40960,
+      "max_new_tokens": 32768,
+      "dtype": "q4_k_m",
+      "vision": false,
+      "reasoning": true,
+      "repo_id": "Qwen/Qwen3-8B-GGUF",
+      "gguf_filename": "Qwen3-8B-Q4_K_M.gguf"
+    },
+    {
+      "alias": "deepseek-r1-7b",
+      "id": "deepseek-ai/DeepSeek-R1-Distill-Qwen-7B",
+      "name": "DeepSeek R1 Distill Qwen 7B Q4_K_M",
+      "backend": "gguf",
+      "revision": "main",
+      "context_tokens": 131072,
+      "max_new_tokens": 32768,
+      "dtype": "q4_k_m",
+      "vision": false,
+      "reasoning": true,
+      "repo_id": "bartowski/DeepSeek-R1-Distill-Qwen-7B-GGUF",
+      "gguf_filename": "DeepSeek-R1-Distill-Qwen-7B-Q4_K_M.gguf"
+    },
+    {
+      "alias": "llama31-8b",
+      "id": "meta-llama/Llama-3.1-8B-Instruct",
+      "name": "Llama 3.1 8B Instruct Q4_K_M",
+      "backend": "gguf",
+      "revision": "main",
+      "context_tokens": 131072,
+      "max_new_tokens": 32768,
+      "dtype": "q4_k_m",
+      "vision": false,
+      "reasoning": false,
+      "repo_id": "bartowski/Meta-Llama-3.1-8B-Instruct-GGUF",
+      "gguf_filename": "Meta-Llama-3.1-8B-Instruct-Q4_K_M.gguf"
+    }
   ]
 }

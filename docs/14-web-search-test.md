@@ -15,7 +15,7 @@ set -a
 source .env
 set +a
 LLM_STUDIO_TEST_BASE_URL=http://10.8.0.1:18080/v1 \
-  python3 tests/web_search_contract.py
+  python3 test/scripts/web_search_contract.py
 ```
 
 A pass means the model returned one valid `web_search` function call with JSON

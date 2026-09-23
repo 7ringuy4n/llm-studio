@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>LLM Studio model statistic tables</title>
+<style>
+:root {
+  --bg: #f6f7f9;
+  --card: #fff;
+  --ink: #1a1d23;
+  --muted: #5c6570;
+  --line: #d8dde3;
+  --accent: #0b6e4f;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: "IBM Plex Sans", "Segoe UI", sans-serif;
+  color: var(--ink);
+  background: linear-gradient(180deg, #eef2f0 0%, var(--bg) 40%);
+  padding: 2rem 1.25rem 4rem;
+}
+main {
+  max-width: 1100px;
+  margin: 0 auto;
+}
+h1 {
+  font-family: "IBM Plex Serif", Georgia, serif;
+  font-weight: 600;
+  font-size: 1.75rem;
+  margin: 0 0 0.35rem;
+}
+.meta { color: var(--muted); margin-bottom: 1.5rem; font-size: 0.95rem; }
+.panel {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  overflow: auto;
+  box-shadow: 0 8px 24px rgba(26,29,35,0.06);
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+thead th {
+  position: sticky;
+  top: 0;
+  background: #0f3d32;
+  color: #f4faf7;
+  text-align: left;
+  padding: 0.75rem 0.85rem;
+  font-weight: 600;
+}
+tbody td {
+  padding: 0.65rem 0.85rem;
+  border-bottom: 1px solid var(--line);
+  vertical-align: top;
+}
+tbody tr:nth-child(even) { background: #f9fbfa; }
+tbody tr:hover { background: #e8f5ef; }
+.note { margin-top: 1rem; color: var(--muted); font-size: 0.85rem; }
+</style>
+</head>
+<body>
+<main>
+  <h1>LLM Studio performance tables</h1>
+  <p class="meta">Generated 2026-09-23 06:46 UTC · template columns match model-statistic report · CPU default 3.0/3</p>
+  <div class="panel">
+    <table>
+      <thead>
+        <tr>
+          <th>Source</th>
+          <th>Model</th>
+          <th>Prompt</th>
+          <th>Tokens in/out</th>
+          <th>Cache%</th>
+          <th>First token</th>
+          <th>Last token</th>
+          <th>Total wall</th>
+        </tr>
+      </thead>
+      <tbody>
+<tr><td>api-all-models</td><td>Qwen/Qwen3.5-0.8B</td><td>short</td><td>40/18</td><td>0.0</td><td>0.340s</td><td>2.337s</td><td>11.089s</td></tr>
+<tr><td>api-all-models</td><td>Qwen/Qwen3.5-0.8B</td><td>long</td><td>13235/18</td><td>0.0</td><td>177.261s</td><td>193.949s</td><td>194.275s</td></tr>
+<tr><td>api-realworld</td><td>Qwen/Qwen3.5-0.8B</td><td>short-realworld</td><td>n/a</td><td>0.0</td><td>1.119s</td><td>n/a</td><td>18.878s</td></tr>
+<tr><td>api-realworld</td><td>Qwen/Qwen3.5-0.8B</td><td>long-realworld</td><td>n/a</td><td>0.0</td><td>6.442s</td><td>n/a</td><td>16.254s</td></tr>
+<tr><td>api-realworld</td><td>Qwen/Qwen3.5-2B</td><td>short-realworld</td><td>n/a</td><td>0.0</td><td>2.586s</td><td>n/a</td><td>19.258s</td></tr>
+<tr><td>api-realworld</td><td>Qwen/Qwen3.5-2B</td><td>long-realworld</td><td>n/a</td><td>0.0</td><td>12.169s</td><td>n/a</td><td>39.272s</td></tr>
+<tr><td>api-realworld</td><td>Qwen/Qwen3-8B</td><td>short-realworld</td><td>n/a</td><td>0.0</td><td>3.057s</td><td>n/a</td><td>19.031s</td></tr>
+<tr><td>api-realworld</td><td>Qwen/Qwen3-8B</td><td>long-realworld</td><td>n/a</td><td>1.1</td><td>83.378s</td><td>n/a</td><td>93.008s</td></tr>
+<tr><td>api-realworld</td><td>deepseek-ai/DeepSeek-R1-Distill-Qwen-7B</td><td>short-realworld</td><td>n/a</td><td>0.0</td><td>2.377s</td><td>n/a</td><td>19.480s</td></tr>
+<tr><td>api-realworld</td><td>deepseek-ai/DeepSeek-R1-Distill-Qwen-7B</td><td>long-realworld</td><td>n/a</td><td>0.74</td><td>75.566s</td><td>n/a</td><td>92.879s</td></tr>
+<tr><td>api-realworld</td><td>meta-llama/Llama-3.1-8B-Instruct</td><td>short-realworld</td><td>n/a</td><td>0.0</td><td>4.146s</td><td>n/a</td><td>21.020s</td></tr>
+<tr><td>api-realworld</td><td>meta-llama/Llama-3.1-8B-Instruct</td><td>long-realworld</td><td>n/a</td><td>2.91</td><td>67.480s</td><td>n/a</td><td>80.761s</td></tr>
+<tr><td>matrix-3vcpu</td><td>Qwen3.5-0.8B</td><td>reasoning:off</td><td>54/42</td><td>0.0</td><td>0.358s</td><td>6.166s</td><td>6.296s</td></tr>
+<tr><td>matrix-3vcpu</td><td>Qwen3.5-0.8B</td><td>reasoning:low</td><td>52/512</td><td>0.0</td><td>0.401s</td><td>80.455s</td><td>80.582s</td></tr>
+<tr><td>matrix-3vcpu</td><td>Qwen3.5-0.8B</td><td>reasoning:medium</td><td>52/512</td><td>0.0</td><td>0.301s</td><td>82.059s</td><td>82.144s</td></tr>
+<tr><td>matrix-3vcpu</td><td>Qwen3.5-0.8B</td><td>reasoning:high</td><td>52/512</td><td>0.0</td><td>0.328s</td><td>66.408s</td><td>66.499s</td></tr>
+<tr><td>matrix-3vcpu</td><td>Qwen3.5-0.8B</td><td>reasoning:xhigh</td><td>52/512</td><td>0.0</td><td>0.347s</td><td>89.641s</td><td>89.73s</td></tr>
+<tr><td>matrix-3vcpu</td><td>Qwen3.5-0.8B</td><td>reasoning:max</td><td>52/512</td><td>0.0</td><td>0.363s</td><td>72.87s</td><td>72.955s</td></tr>
+<tr><td>matrix-3vcpu</td><td>Qwen3.5-2B</td><td>reasoning:off</td><td>54/18</td><td>0.0</td><td>1.218s</td><td>5.104s</td><td>13.736s</td></tr>
+<tr><td>matrix-3vcpu</td><td>Qwen3.5-2B</td><td>reasoning:low</td><td>52/242</td><td>0.0</td><td>1.087s</td><td>73.777s</td><td>73.864s</td></tr>
+<tr><td>matrix-3vcpu</td><td>Qwen3.5-2B</td><td>reasoning:medium</td><td>52/242</td><td>0.0</td><td>0.999s</td><td>84.906s</td><td>84.987s</td></tr>
+<tr><td>matrix-3vcpu</td><td>Qwen3.5-2B</td><td>reasoning:high</td><td>52/242</td><td>0.0</td><td>0.559s</td><td>63.776s</td><td>63.897s</td></tr>
+<tr><td>matrix-3vcpu</td><td>Qwen3.5-2B</td><td>reasoning:xhigh</td><td>52/242</td><td>0.0</td><td>0.62s</td><td>75.029s</td><td>75.159s</td></tr>
+<tr><td>matrix-3vcpu</td><td>Qwen3.5-2B</td><td>reasoning:max</td><td>52/242</td><td>0.0</td><td>1.387s</td><td>69.631s</td><td>69.72s</td></tr>
+<tr><td>matrix-3vcpu</td><td>Qwen3-8B</td><td>reasoning:off</td><td>51/8</td><td>0.0</td><td>6.892s</td><td>9.792s</td><td>25.204s</td></tr>
+<tr><td>matrix-3vcpu</td><td>Qwen3-8B</td><td>reasoning:low</td><td>48/169</td><td>87.5</td><td>0.508s</td><td>22.599s</td><td>23.038s</td></tr>
+<tr><td>matrix-3vcpu</td><td>Qwen3-8B</td><td>reasoning:medium</td><td>48/169</td><td>0.0</td><td>5.537s</td><td>26.305s</td><td>39.599s</td></tr>
+<tr><td>matrix-3vcpu</td><td>Qwen3-8B</td><td>reasoning:high</td><td>48/237</td><td>100.0</td><td>0.23s</td><td>28.573s</td><td>29.093s</td></tr>
+<tr><td>matrix-3vcpu</td><td>Qwen3-8B</td><td>reasoning:xhigh</td><td>48/237</td><td>100.0</td><td>0.37s</td><td>33.977s</td><td>34.713s</td></tr>
+<tr><td>matrix-3vcpu</td><td>Qwen3-8B</td><td>reasoning:max</td><td>48/237</td><td>100.0</td><td>1.152s</td><td>33.658s</td><td>34.336s</td></tr>
+<tr><td>matrix-3vcpu</td><td>DeepSeek-R1 7B</td><td>reasoning:off</td><td>46/233</td><td>0.0</td><td>2.608s</td><td>30.297s</td><td>41.14s</td></tr>
+<tr><td>matrix-3vcpu</td><td>DeepSeek-R1 7B</td><td>reasoning:low</td><td>43/208</td><td>95.35</td><td>0.192s</td><td>25.333s</td><td>25.697s</td></tr>
+<tr><td>matrix-3vcpu</td><td>DeepSeek-R1 7B</td><td>reasoning:medium</td><td>43/233</td><td>100.0</td><td>0.112s</td><td>27.321s</td><td>27.678s</td></tr>
+<tr><td>matrix-3vcpu</td><td>DeepSeek-R1 7B</td><td>reasoning:high</td><td>43/233</td><td>100.0</td><td>0.149s</td><td>26.147s</td><td>26.52s</td></tr>
+<tr><td>matrix-3vcpu</td><td>DeepSeek-R1 7B</td><td>reasoning:xhigh</td><td>43/233</td><td>100.0</td><td>0.134s</td><td>27.041s</td><td>27.389s</td></tr>
+<tr><td>matrix-3vcpu</td><td>DeepSeek-R1 7B</td><td>reasoning:max</td><td>43/233</td><td>100.0</td><td>0.128s</td><td>27.801s</td><td>28.211s</td></tr>
+<tr><td>matrix-3vcpu</td><td>Llama 3.1 8B</td><td>reasoning:off</td><td>73/3</td><td>0.0</td><td>4.315s</td><td>4.719s</td><td>16.997s</td></tr>
+<tr><td>matrix-3vcpu</td><td>Llama 3.1 8B</td><td>reasoning:low</td><td>73/3</td><td>100.0</td><td>0.114s</td><td>0.459s</td><td>0.611s</td></tr>
+<tr><td>matrix-3vcpu</td><td>Llama 3.1 8B</td><td>reasoning:medium</td><td>73/3</td><td>100.0</td><td>0.124s</td><td>0.537s</td><td>0.642s</td></tr>
+<tr><td>matrix-3vcpu</td><td>Llama 3.1 8B</td><td>reasoning:high</td><td>73/3</td><td>100.0</td><td>0.114s</td><td>0.449s</td><td>0.628s</td></tr>
+<tr><td>matrix-3vcpu</td><td>Llama 3.1 8B</td><td>reasoning:xhigh</td><td>73/3</td><td>100.0</td><td>0.113s</td><td>0.446s</td><td>0.559s</td></tr>
+<tr><td>matrix-3vcpu</td><td>Llama 3.1 8B</td><td>reasoning:max</td><td>73/3</td><td>100.0</td><td>0.126s</td><td>0.516s</td><td>0.646s</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="note">Sources: <code>test/reports/*-perf.json</code>, <code>docs/perf-results/comparison.md</code> (3 vCPU matrix). Markdown narrative: <code>model-statistic-report.md</code>.</p>
+</main>
+</body>
+</html>

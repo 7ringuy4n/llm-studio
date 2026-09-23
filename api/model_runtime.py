@@ -30,6 +30,7 @@ from .schemas import (
     TextContentPart,
 )
 from .settings import settings
+from .tracing import system_trace_context, trace_event
 
 ALLOWED_MODELS = allowed_models(settings.model_allowed_models)
 ALLOWED_BY_ID = {model.id: model for model in ALLOWED_MODELS}
@@ -154,6 +155,7 @@ class ModelRuntime:
         self._tokenizer = None
         self._model = None
         self._loaded_model_id: str | None = None
+        self._loaded_at: float | None = None
         self._idle_timer: threading.Timer | None = None
         self._last_used = 0.0
         self._load_lock = threading.Lock()
@@ -182,12 +184,15 @@ class ModelRuntime:
         with self._load_lock:
             self._cancel_idle_locked()
 
-    def _unload_locked(self) -> None:
+    def _unload_locked(self, reason: str = "manual") -> None:
+        model_id = self._loaded_model_id
+        loaded_at = self._loaded_at
         self._cancel_idle_locked()
         self._model = None
         self._processor = None
         self._tokenizer = None
         self._loaded_model_id = None
+        self._loaded_at = None
         gc.collect()
         # PyTorch CPU tensors are freed above, but glibc may retain their
         # arenas in the process RSS. Return unused pages to the OS so an idle
@@ -202,15 +207,24 @@ class ModelRuntime:
             # malloc_trim is a glibc extension; garbage collection is still
             # correct on platforms that do not expose it.
             pass
+        if model_id is not None and loaded_at is not None:
+            trace_event(
+                "model_unloaded",
+                system_trace_context("unload"),
+                model_id=model_id,
+                load_ms=None,
+                resident_seconds=round(time.monotonic() - loaded_at, 3),
+                reason=reason,
+            )
 
-    def unload(self) -> None:
+    def unload(self, reason: str = "manual") -> None:
         with self._load_lock:
-            self._unload_locked()
+            self._unload_locked(reason=reason)
 
     def _unload_if_idle(self, last_used: float) -> None:
         with self._load_lock:
             if self._last_used == last_used:
-                self._unload_locked()
+                self._unload_locked(reason="idle")
 
     def mark_idle(self) -> None:
         with self._load_lock:
@@ -226,7 +240,7 @@ class ModelRuntime:
             self._idle_timer.daemon = True
             self._idle_timer.start()
 
-    def load(self, model_id: str | None = None) -> ModelSpec:
+    def load(self, model_id: str | None = None, reason: str = "request") -> ModelSpec:
         selected_id = model_id or settings.model_id
         try:
             spec = ALLOWED_BY_ID[selected_id]
@@ -237,7 +251,8 @@ class ModelRuntime:
             if self.loaded and self._loaded_model_id == spec.id:
                 return spec
             if self.loaded:
-                self._unload_locked()
+                self._unload_locked(reason="switch")
+            load_started = time.monotonic()
             common = {"revision": spec.revision}
             if spec.backend == "gguf":
                 if not spec.gguf_filename:
@@ -250,12 +265,19 @@ class ModelRuntime:
                     revision=spec.revision,
                     local_files_only=True,
                 )
+                n_batch = settings.model_gguf_n_batch
+                n_ubatch = min(settings.model_gguf_n_ubatch, n_batch)
                 self._model = Llama(
                     model_path=model_path,
                     n_ctx=min(spec.context_tokens, settings.model_gguf_context_tokens),
                     n_threads=settings.cpu_threads,
                     n_threads_batch=settings.cpu_threads,
+                    n_batch=n_batch,
+                    n_ubatch=n_ubatch,
                     n_gpu_layers=0,
+                    use_mmap=settings.model_gguf_use_mmap,
+                    use_mlock=settings.model_gguf_use_mlock,
+                    flash_attn=False,
                     verbose=False,
                 )
                 if settings.model_kv_cache_bytes:
@@ -314,6 +336,16 @@ class ModelRuntime:
             if spec.backend != "gguf":
                 self._model.eval()
             self._loaded_model_id = spec.id
+            self._loaded_at = time.monotonic()
+            trace_event(
+                "model_loaded",
+                system_trace_context("load"),
+                model_id=spec.id,
+                load_ms=round((self._loaded_at - load_started) * 1000, 1),
+                resident_seconds=0.0,
+                reason=reason,
+                backend=spec.backend,
+            )
             return spec
 
     @staticmethod

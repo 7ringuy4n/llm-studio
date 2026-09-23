@@ -105,7 +105,13 @@ def dsh_yaml() -> None:
         context_tokens = int(model["context_tokens"])
         if model["backend"] == "gguf":
             context_tokens = min(context_tokens, configured_gguf_context)
-        print(f"  - id: {model['id']}\n    name: {model['name']}\n    contextWindow: {context_tokens}\n    maxTokens: 2048\n    input: {modalities}")
+        print(
+            f"  - id: {model['id']}\n"
+            f"    name: {model['name']}\n"
+            f"    contextWindow: {context_tokens}\n"
+            f"    maxTokens: {int(model['max_new_tokens'])}\n"
+            f"    input: {modalities}"
+        )
         if model["reasoning"]:
             print("    reasoningEfforts:\n      'off': null")
             for effort in ("low", "medium", "high", "xhigh", "max"):
