@@ -28,11 +28,11 @@ generation_slots = asyncio.Semaphore(settings.max_concurrent_requests)
 @asynccontextmanager
 async def lifespan(_: FastAPI):
     if settings.model_load_on_start:
-        await asyncio.to_thread(runtime.load, settings.model_id)
+        await asyncio.to_thread(runtime.load, settings.model_id, "startup")
     try:
         yield
     finally:
-        await asyncio.to_thread(runtime.unload)
+        await asyncio.to_thread(runtime.unload, "shutdown")
 
 
 app = FastAPI(

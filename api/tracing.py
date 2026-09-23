@@ -35,11 +35,38 @@ class TraceContext:
     forwarded_for: tuple[str, ...]
 
 
+def _header(headers: Mapping[str, str], name: str) -> str:
+    # Starlette Headers is case-insensitive; plain dicts used in tests are not.
+    if hasattr(headers, "get"):
+        direct = headers.get(name)
+        if direct:
+            return direct
+        lower = name.lower()
+        for key, value in headers.items():
+            if key.lower() == lower and value:
+                return value
+    return ""
+
+
 def _external_id(headers: Mapping[str, str], name: str, prefix: str) -> str:
-    candidate = headers.get(name, "")
+    candidate = _header(headers, name)
     if EXTERNAL_ID.fullmatch(candidate):
         return candidate
     return f"{prefix}_{uuid.uuid4().hex}"
+
+
+def _session_id(headers: Mapping[str, str]) -> str:
+    # Prefer the llm-studio / OpenRouter header, then pi-ai openai affinity headers.
+    for name in (
+        "x-session-id",
+        "x-session-affinity",
+        "session_id",
+        "x-client-request-id",
+    ):
+        candidate = _header(headers, name)
+        if EXTERNAL_ID.fullmatch(candidate):
+            return candidate
+    return f"session_{uuid.uuid4().hex}"
 
 
 def _valid_ip(value: str) -> str | None:
@@ -50,12 +77,27 @@ def _valid_ip(value: str) -> str | None:
         return None
 
 
+def system_trace_context(event_prefix: str = "lifecycle") -> TraceContext:
+    """Identity for process-lifecycle events that are not tied to an HTTP request."""
+    return TraceContext(
+        request_id=f"req_{event_prefix}_{uuid.uuid4().hex}",
+        session_id=f"session_{event_prefix}",
+        correlation_id=f"corr_{event_prefix}",
+        trace_id=uuid.uuid4().hex,
+        span_id=uuid.uuid4().hex[:16],
+        execution_id=f"exec_{uuid.uuid4().hex}",
+        source_ip="local",
+        peer_ip="local",
+        forwarded_for=(),
+    )
+
+
 def new_trace_context(headers: Mapping[str, str], peer_ip: str | None = None) -> TraceContext:
     trace_id = uuid.uuid4().hex
     validated_peer = _valid_ip(peer_ip or "") or "unknown"
     forwarded_for = tuple(
         address
-        for item in headers.get("x-forwarded-for", "").split(",")
+        for item in _header(headers, "x-forwarded-for").split(",")
         if (address := _valid_ip(item)) is not None
     )
     # Traefik is the only network path to the un-published API container and
@@ -63,13 +105,13 @@ def new_trace_context(headers: Mapping[str, str], peer_ip: str | None = None) ->
     # Selecting the rightmost valid entry avoids trusting a client-supplied
     # prefix while retaining the original client address behind Traefik.
     source_ip = forwarded_for[-1] if forwarded_for else validated_peer
-    traceparent = headers.get("traceparent", "").lower()
+    traceparent = _header(headers, "traceparent").lower()
     match = TRACEPARENT.fullmatch(traceparent)
     if match and match.group(1) != "0" * 32 and match.group(2) != "0" * 16:
         trace_id = match.group(1)
     return TraceContext(
         request_id=_external_id(headers, "x-request-id", "req"),
-        session_id=_external_id(headers, "x-session-id", "session"),
+        session_id=_session_id(headers),
         correlation_id=_external_id(headers, "x-correlation-id", "corr"),
         trace_id=trace_id,
         span_id=uuid.uuid4().hex[:16],
