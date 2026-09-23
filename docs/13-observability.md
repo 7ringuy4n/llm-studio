@@ -80,7 +80,17 @@ OpenObserve **Logs** stream `llm_studio_requests` contains:
 - queue, model, endpoint, first-token, and last-token latency in milliseconds;
 - input, output, total, and cached-input tokens;
 - cache-hit percentage and output tokens/second;
-- process maximum RSS and accumulated user/system CPU time.
+- process maximum RSS and accumulated user/system CPU time;
+- `model_loaded` / `model_unloaded` lifecycle events with `model_id`,
+  `load_ms`, `resident_seconds`, and `reason` (`startup`, `request`,
+  `switch`, `idle`, `shutdown`, `manual`).
+
+`session_id` is taken from the first matching inbound header:
+`X-Session-ID`, `X-Session-Affinity`, `session_id`, then
+`X-Client-Request-ID`. DeepSeek Harness (homelab provider) should set
+`compat.sendSessionAffinityHeaders: true` with
+`sessionAffinityFormat: openai` so each chat turn carries
+`x-session-affinity` equal to the DSH session id.
 
 Embedded image bytes are never stored: the logger records only their character
 count and SHA-256 digest. Long strings are truncated at
@@ -115,8 +125,9 @@ inferred from response speed alone.
 
 Use `model` to see traffic for every installed/selected model, `session_id` to
 follow a conversation, `correlation_id` to group a batch, and `execution_id` to
-identify a single generation attempt. Host metrics appear in OpenObserve's
-Metrics explorer with `service.name=llm-studio-host`.
+identify a single generation attempt. Filter `event:"model_loaded"` or
+`event:"model_unloaded"` for RAM residency uptime. Host metrics appear in
+OpenObserve's Metrics explorer with `service.name=llm-studio-host`.
 
 ## Useful checks
 

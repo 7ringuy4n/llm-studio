@@ -1,3 +1,15 @@
+# LLM Studio handbook
+
+Project narrative and release notes:
+
+- [CHANGELOG](CHANGELOG.md) — dated bullet changes
+- [HISTORY](HISTORY.md) — decisions and real-world usage notes
+- [HARDWARE](HARDWARE.md) — VPS sizing and API CPU quota
+- [SECURITY](SECURITY.md) — isolation and credential rules
+- Verification: [../test/README.md](../test/README.md) · [../test/REPORT.md](../test/REPORT.md)
+- Agent rules: [../rule/AGENT_RULES.md](../rule/AGENT_RULES.md)
+- Root-cause log: [../history/README.md](../history/README.md)
+
 # AI Model Training Handbook
 
 This handbook is the learning path for training and evaluating models in the
@@ -32,6 +44,17 @@ Read the guides in this order:
     model caches, datasets, checkpoints, adapters, experiments, and secrets.
 13. [Request tracing and the OpenObserve UI](13-observability.md) — inspect
     requests, responses, token/cache timing, IDs, IPs, and host resources.
+14. [Web-search tool contract](14-web-search-test.md) — prove llm-studio emits
+    `web_search` tool calls (model side only).
+15. [DSH + Tavily web search/fetch](15-dsh-tavily-web.md) — wire
+    `dsh-web-search-free` so DSH executes search/fetch via Tavily.
+16. [CPU performance tuning](16-cpu-performance.md) — threads, batch, cache,
+    3 vs 4 vCPU matrix vs the model-statistic baseline.
+17. [Model statistic report](perf-results/model-statistic-report.md) — Markdown
+    report shaped like `model-statistic 2.docx` (reasoning matrix, short/long
+    all-models lab, accuracy/cost/cache notes).
+18. [HTML performance tables](perf-results/model-statistic-tables.html) — sortable
+    browser view of Model / Prompt / Tokens / Cache% / First / Last / Total.
 
 The generated VPS inventory remains in [environment.md](environment.md).
 

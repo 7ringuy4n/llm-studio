@@ -1,0 +1,184 @@
+{
+  "results": [
+    {
+      "model": "Qwen/Qwen3.5-0.8B",
+      "kind": "short_realworld",
+      "wall_ms": 18878,
+      "first_token_ms": "1118.8",
+      "cache_hit_percent": "0.0"
+    },
+    {
+      "model": "Qwen/Qwen3.5-0.8B",
+      "kind": "long_realworld",
+      "wall_ms": 16254,
+      "first_token_ms": "6441.7",
+      "cache_hit_percent": "0.0"
+    },
+    {
+      "model": "Qwen/Qwen3.5-0.8B",
+      "kind": "continuous_messages",
+      "turns": 3,
+      "wall_ms_per_turn": [
+        10459,
+        11507,
+        5167
+      ],
+      "wall_ms_total": 27133
+    },
+    {
+      "model": "Qwen/Qwen3.5-0.8B",
+      "kind": "concurrency",
+      "workers": 3,
+      "wall_ms": [
+        2199,
+        4375,
+        6524
+      ],
+      "wall_ms_max": 6524
+    },
+    {
+      "model": "Qwen/Qwen3.5-2B",
+      "kind": "short_realworld",
+      "wall_ms": 19258,
+      "first_token_ms": "2585.6",
+      "cache_hit_percent": "0.0"
+    },
+    {
+      "model": "Qwen/Qwen3.5-2B",
+      "kind": "long_realworld",
+      "wall_ms": 39272,
+      "first_token_ms": "12169.0",
+      "cache_hit_percent": "0.0"
+    },
+    {
+      "model": "Qwen/Qwen3.5-2B",
+      "kind": "continuous_messages",
+      "turns": 3,
+      "wall_ms_per_turn": [
+        22289,
+        22836,
+        16383
+      ],
+      "wall_ms_total": 61508
+    },
+    {
+      "model": "Qwen/Qwen3.5-2B",
+      "kind": "concurrency",
+      "workers": 3,
+      "wall_ms": [
+        4709,
+        9030,
+        12608
+      ],
+      "wall_ms_max": 12608
+    },
+    {
+      "model": "Qwen/Qwen3-8B",
+      "kind": "short_realworld",
+      "wall_ms": 19031,
+      "first_token_ms": "3056.9",
+      "cache_hit_percent": "0.0"
+    },
+    {
+      "model": "Qwen/Qwen3-8B",
+      "kind": "long_realworld",
+      "wall_ms": 93008,
+      "first_token_ms": "83377.6",
+      "cache_hit_percent": "1.1"
+    },
+    {
+      "model": "Qwen/Qwen3-8B",
+      "kind": "continuous_messages",
+      "turns": 3,
+      "wall_ms_per_turn": [
+        10222,
+        14602,
+        12626
+      ],
+      "wall_ms_total": 37450
+    },
+    {
+      "model": "Qwen/Qwen3-8B",
+      "kind": "concurrency",
+      "workers": 3,
+      "wall_ms": [
+        2094,
+        3646,
+        5399
+      ],
+      "wall_ms_max": 5399
+    },
+    {
+      "model": "deepseek-ai/DeepSeek-R1-Distill-Qwen-7B",
+      "kind": "short_realworld",
+      "wall_ms": 19480,
+      "first_token_ms": "2377.1",
+      "cache_hit_percent": "0.0"
+    },
+    {
+      "model": "deepseek-ai/DeepSeek-R1-Distill-Qwen-7B",
+      "kind": "long_realworld",
+      "wall_ms": 92879,
+      "first_token_ms": "75566.4",
+      "cache_hit_percent": "0.74"
+    },
+    {
+      "model": "deepseek-ai/DeepSeek-R1-Distill-Qwen-7B",
+      "kind": "continuous_messages",
+      "turns": 3,
+      "wall_ms_per_turn": [
+        11570,
+        14309,
+        14389
+      ],
+      "wall_ms_total": 40268
+    },
+    {
+      "model": "deepseek-ai/DeepSeek-R1-Distill-Qwen-7B",
+      "kind": "concurrency",
+      "workers": 3,
+      "wall_ms": [
+        2821,
+        5502,
+        8060
+      ],
+      "wall_ms_max": 8060
+    },
+    {
+      "model": "meta-llama/Llama-3.1-8B-Instruct",
+      "kind": "short_realworld",
+      "wall_ms": 21020,
+      "first_token_ms": "4146.2",
+      "cache_hit_percent": "0.0"
+    },
+    {
+      "model": "meta-llama/Llama-3.1-8B-Instruct",
+      "kind": "long_realworld",
+      "wall_ms": 80761,
+      "first_token_ms": "67479.8",
+      "cache_hit_percent": "2.91"
+    },
+    {
+      "model": "meta-llama/Llama-3.1-8B-Instruct",
+      "kind": "continuous_messages",
+      "turns": 3,
+      "wall_ms_per_turn": [
+        10729,
+        11291,
+        7373
+      ],
+      "wall_ms_total": 29393
+    },
+    {
+      "model": "meta-llama/Llama-3.1-8B-Instruct",
+      "kind": "concurrency",
+      "workers": 3,
+      "wall_ms": [
+        1944,
+        3172,
+        6041
+      ],
+      "wall_ms_max": 6041
+    }
+  ]
+}

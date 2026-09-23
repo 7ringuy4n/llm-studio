@@ -162,6 +162,679 @@
       ]
     },
     {
+      "name": "All living models (short + ~10k long)",
+      "item": [
+        {
+          "name": "Short realworld - current {{model}}",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"model\": \"{{model}}\",\n  \"messages\": [\n    {\"role\": \"system\", \"content\": \"You are a concise homelab ops assistant.\"},\n    {\"role\": \"user\", \"content\": \"{{shortRealworldPrompt}}\"}\n  ],\n  \"max_tokens\": 64,\n  \"temperature\": 0,\n  \"stream\": false,\n  \"chat_template_kwargs\": {\"enable_thinking\": false}\n}"
+            },
+            "url": "{{baseUrl}}/v1/chat/completions"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Assistant content is non-empty', () => { const b = pm.response.json(); pm.expect(b.choices[0].message.content).to.be.a('string').and.not.empty; });",
+                  "pm.test('Latency telemetry headers exist', () => { ['X-First-Token-Ms','X-Last-Token-Ms','X-Cache-Hit-Percent'].forEach(n => pm.expect(pm.response.headers.get(n), n).to.be.ok); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Long ~10k tool-trace - current {{model}}",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"model\": \"{{model}}\",\n  \"messages\": [\n    {\"role\": \"system\", \"content\": \"You are a concise homelab ops assistant.\"},\n    {\"role\": \"user\", \"content\": {{longPrompt10kJson}}}\n  ],\n  \"max_tokens\": 128,\n  \"temperature\": 0,\n  \"stream\": false,\n  \"chat_template_kwargs\": {\"enable_thinking\": false}\n}"
+            },
+            "url": "{{baseUrl}}/v1/chat/completions"
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Build ~10k-token tool-trace filler (\u22484 chars/token) for long-prompt labs.",
+                  "const unit = \"Tool-trace context: web_search query='homelab traefik openobserve' hit title='VPN API checklist' url='https://example.invalid/ops' snippet='Bind Traefik to 10.8.0.1:18080; leave one vCPU free for OO/OTel.' \";",
+                  "const target = Number(pm.environment.get('longPromptTargetTokens') || 10000);",
+                  "const needChars = target * 4;",
+                  "let filler = '';",
+                  "while (filler.length < needChars) { filler += unit; }",
+                  "const question = pm.environment.get('longRealworldQuestion');",
+                  "const prompt = 'Ops / tool-call background (treat as retrieved context; do not invent tools):\\n' + filler + '\\n\\nQuestion: ' + question;",
+                  "pm.variables.set('longPrompt10kJson', JSON.stringify(prompt));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Assistant content is non-empty', () => { const b = pm.response.json(); pm.expect(b.choices[0].message.content).to.be.a('string').and.not.empty; });",
+                  "pm.test('Latency telemetry headers exist', () => { ['X-First-Token-Ms','X-Last-Token-Ms','X-Cache-Hit-Percent'].forEach(n => pm.expect(pm.response.headers.get(n), n).to.be.ok); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Short - Qwen3.5-2B",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"model\": \"{{qwen35_2b_model}}\",\n  \"messages\": [\n    {\"role\": \"system\", \"content\": \"You are a concise homelab ops assistant.\"},\n    {\"role\": \"user\", \"content\": \"{{shortRealworldPrompt}}\"}\n  ],\n  \"max_tokens\": 64,\n  \"temperature\": 0,\n  \"stream\": false,\n  \"chat_template_kwargs\": {\"enable_thinking\": false}\n}"
+            },
+            "url": "{{baseUrl}}/v1/chat/completions"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Assistant content is non-empty', () => { const b = pm.response.json(); pm.expect(b.choices[0].message.content).to.be.a('string').and.not.empty; });",
+                  "pm.test('Latency telemetry headers exist', () => { ['X-First-Token-Ms','X-Last-Token-Ms','X-Cache-Hit-Percent'].forEach(n => pm.expect(pm.response.headers.get(n), n).to.be.ok); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Long ~10k - Qwen3.5-2B",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"model\": \"{{qwen35_2b_model}}\",\n  \"messages\": [\n    {\"role\": \"system\", \"content\": \"You are a concise homelab ops assistant.\"},\n    {\"role\": \"user\", \"content\": {{longPrompt10kJson}}}\n  ],\n  \"max_tokens\": 128,\n  \"temperature\": 0,\n  \"stream\": false,\n  \"chat_template_kwargs\": {\"enable_thinking\": false}\n}"
+            },
+            "url": "{{baseUrl}}/v1/chat/completions"
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Build ~10k-token tool-trace filler (\u22484 chars/token) for long-prompt labs.",
+                  "const unit = \"Tool-trace context: web_search query='homelab traefik openobserve' hit title='VPN API checklist' url='https://example.invalid/ops' snippet='Bind Traefik to 10.8.0.1:18080; leave one vCPU free for OO/OTel.' \";",
+                  "const target = Number(pm.environment.get('longPromptTargetTokens') || 10000);",
+                  "const needChars = target * 4;",
+                  "let filler = '';",
+                  "while (filler.length < needChars) { filler += unit; }",
+                  "const question = pm.environment.get('longRealworldQuestion');",
+                  "const prompt = 'Ops / tool-call background (treat as retrieved context; do not invent tools):\\n' + filler + '\\n\\nQuestion: ' + question;",
+                  "pm.variables.set('longPrompt10kJson', JSON.stringify(prompt));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Assistant content is non-empty', () => { const b = pm.response.json(); pm.expect(b.choices[0].message.content).to.be.a('string').and.not.empty; });",
+                  "pm.test('Latency telemetry headers exist', () => { ['X-First-Token-Ms','X-Last-Token-Ms','X-Cache-Hit-Percent'].forEach(n => pm.expect(pm.response.headers.get(n), n).to.be.ok); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Short - Qwen3-8B",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"model\": \"{{qwen3_8b_model}}\",\n  \"messages\": [\n    {\"role\": \"system\", \"content\": \"You are a concise homelab ops assistant.\"},\n    {\"role\": \"user\", \"content\": \"{{shortRealworldPrompt}}\"}\n  ],\n  \"max_tokens\": 64,\n  \"temperature\": 0,\n  \"stream\": false,\n  \"chat_template_kwargs\": {\"enable_thinking\": false}\n}"
+            },
+            "url": "{{baseUrl}}/v1/chat/completions"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Assistant content is non-empty', () => { const b = pm.response.json(); pm.expect(b.choices[0].message.content).to.be.a('string').and.not.empty; });",
+                  "pm.test('Latency telemetry headers exist', () => { ['X-First-Token-Ms','X-Last-Token-Ms','X-Cache-Hit-Percent'].forEach(n => pm.expect(pm.response.headers.get(n), n).to.be.ok); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Long ~10k - Qwen3-8B",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"model\": \"{{qwen3_8b_model}}\",\n  \"messages\": [\n    {\"role\": \"system\", \"content\": \"You are a concise homelab ops assistant.\"},\n    {\"role\": \"user\", \"content\": {{longPrompt10kJson}}}\n  ],\n  \"max_tokens\": 128,\n  \"temperature\": 0,\n  \"stream\": false,\n  \"chat_template_kwargs\": {\"enable_thinking\": false}\n}"
+            },
+            "url": "{{baseUrl}}/v1/chat/completions"
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Build ~10k-token tool-trace filler (\u22484 chars/token) for long-prompt labs.",
+                  "const unit = \"Tool-trace context: web_search query='homelab traefik openobserve' hit title='VPN API checklist' url='https://example.invalid/ops' snippet='Bind Traefik to 10.8.0.1:18080; leave one vCPU free for OO/OTel.' \";",
+                  "const target = Number(pm.environment.get('longPromptTargetTokens') || 10000);",
+                  "const needChars = target * 4;",
+                  "let filler = '';",
+                  "while (filler.length < needChars) { filler += unit; }",
+                  "const question = pm.environment.get('longRealworldQuestion');",
+                  "const prompt = 'Ops / tool-call background (treat as retrieved context; do not invent tools):\\n' + filler + '\\n\\nQuestion: ' + question;",
+                  "pm.variables.set('longPrompt10kJson', JSON.stringify(prompt));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Assistant content is non-empty', () => { const b = pm.response.json(); pm.expect(b.choices[0].message.content).to.be.a('string').and.not.empty; });",
+                  "pm.test('Latency telemetry headers exist', () => { ['X-First-Token-Ms','X-Last-Token-Ms','X-Cache-Hit-Percent'].forEach(n => pm.expect(pm.response.headers.get(n), n).to.be.ok); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Short - DeepSeek-R1-7B",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"model\": \"{{deepseek_r1_7b_model}}\",\n  \"messages\": [\n    {\"role\": \"system\", \"content\": \"You are a concise homelab ops assistant.\"},\n    {\"role\": \"user\", \"content\": \"{{shortRealworldPrompt}}\"}\n  ],\n  \"max_tokens\": 64,\n  \"temperature\": 0,\n  \"stream\": false,\n  \"chat_template_kwargs\": {\"enable_thinking\": false}\n}"
+            },
+            "url": "{{baseUrl}}/v1/chat/completions"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Assistant content is non-empty', () => { const b = pm.response.json(); pm.expect(b.choices[0].message.content).to.be.a('string').and.not.empty; });",
+                  "pm.test('Latency telemetry headers exist', () => { ['X-First-Token-Ms','X-Last-Token-Ms','X-Cache-Hit-Percent'].forEach(n => pm.expect(pm.response.headers.get(n), n).to.be.ok); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Long ~10k - DeepSeek-R1-7B",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"model\": \"{{deepseek_r1_7b_model}}\",\n  \"messages\": [\n    {\"role\": \"system\", \"content\": \"You are a concise homelab ops assistant.\"},\n    {\"role\": \"user\", \"content\": {{longPrompt10kJson}}}\n  ],\n  \"max_tokens\": 128,\n  \"temperature\": 0,\n  \"stream\": false,\n  \"chat_template_kwargs\": {\"enable_thinking\": false}\n}"
+            },
+            "url": "{{baseUrl}}/v1/chat/completions"
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Build ~10k-token tool-trace filler (\u22484 chars/token) for long-prompt labs.",
+                  "const unit = \"Tool-trace context: web_search query='homelab traefik openobserve' hit title='VPN API checklist' url='https://example.invalid/ops' snippet='Bind Traefik to 10.8.0.1:18080; leave one vCPU free for OO/OTel.' \";",
+                  "const target = Number(pm.environment.get('longPromptTargetTokens') || 10000);",
+                  "const needChars = target * 4;",
+                  "let filler = '';",
+                  "while (filler.length < needChars) { filler += unit; }",
+                  "const question = pm.environment.get('longRealworldQuestion');",
+                  "const prompt = 'Ops / tool-call background (treat as retrieved context; do not invent tools):\\n' + filler + '\\n\\nQuestion: ' + question;",
+                  "pm.variables.set('longPrompt10kJson', JSON.stringify(prompt));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Assistant content is non-empty', () => { const b = pm.response.json(); pm.expect(b.choices[0].message.content).to.be.a('string').and.not.empty; });",
+                  "pm.test('Latency telemetry headers exist', () => { ['X-First-Token-Ms','X-Last-Token-Ms','X-Cache-Hit-Percent'].forEach(n => pm.expect(pm.response.headers.get(n), n).to.be.ok); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Short - Llama-3.1-8B",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"model\": \"{{llama31_8b_model}}\",\n  \"messages\": [\n    {\"role\": \"system\", \"content\": \"You are a concise homelab ops assistant.\"},\n    {\"role\": \"user\", \"content\": \"{{shortRealworldPrompt}}\"}\n  ],\n  \"max_tokens\": 64,\n  \"temperature\": 0,\n  \"stream\": false,\n  \"chat_template_kwargs\": {\"enable_thinking\": false}\n}"
+            },
+            "url": "{{baseUrl}}/v1/chat/completions"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Assistant content is non-empty', () => { const b = pm.response.json(); pm.expect(b.choices[0].message.content).to.be.a('string').and.not.empty; });",
+                  "pm.test('Latency telemetry headers exist', () => { ['X-First-Token-Ms','X-Last-Token-Ms','X-Cache-Hit-Percent'].forEach(n => pm.expect(pm.response.headers.get(n), n).to.be.ok); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Long ~10k - Llama-3.1-8B",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"model\": \"{{llama31_8b_model}}\",\n  \"messages\": [\n    {\"role\": \"system\", \"content\": \"You are a concise homelab ops assistant.\"},\n    {\"role\": \"user\", \"content\": {{longPrompt10kJson}}}\n  ],\n  \"max_tokens\": 128,\n  \"temperature\": 0,\n  \"stream\": false,\n  \"chat_template_kwargs\": {\"enable_thinking\": false}\n}"
+            },
+            "url": "{{baseUrl}}/v1/chat/completions"
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Build ~10k-token tool-trace filler (\u22484 chars/token) for long-prompt labs.",
+                  "const unit = \"Tool-trace context: web_search query='homelab traefik openobserve' hit title='VPN API checklist' url='https://example.invalid/ops' snippet='Bind Traefik to 10.8.0.1:18080; leave one vCPU free for OO/OTel.' \";",
+                  "const target = Number(pm.environment.get('longPromptTargetTokens') || 10000);",
+                  "const needChars = target * 4;",
+                  "let filler = '';",
+                  "while (filler.length < needChars) { filler += unit; }",
+                  "const question = pm.environment.get('longRealworldQuestion');",
+                  "const prompt = 'Ops / tool-call background (treat as retrieved context; do not invent tools):\\n' + filler + '\\n\\nQuestion: ' + question;",
+                  "pm.variables.set('longPrompt10kJson', JSON.stringify(prompt));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Assistant content is non-empty', () => { const b = pm.response.json(); pm.expect(b.choices[0].message.content).to.be.a('string').and.not.empty; });",
+                  "pm.test('Latency telemetry headers exist', () => { ['X-First-Token-Ms','X-Last-Token-Ms','X-Cache-Hit-Percent'].forEach(n => pm.expect(pm.response.headers.get(n), n).to.be.ok); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Real-world continuous + concurrency",
+      "item": [
+        {
+          "name": "Continuous turn 1 - VPN port",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"model\": \"{{model}}\",\n  \"messages\": [\n    {\"role\": \"system\", \"content\": \"You are a concise homelab ops assistant.\"},\n    {\"role\": \"user\", \"content\": \"We run llm-studio behind Traefik on VPN. What port should DSH use for the API?\"}\n  ],\n  \"max_tokens\": 80,\n  \"temperature\": 0,\n  \"chat_template_kwargs\": {\"enable_thinking\": false}\n}"
+            },
+            "url": "{{baseUrl}}/v1/chat/completions"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Assistant content is non-empty', () => { const b = pm.response.json(); pm.expect(b.choices[0].message.content).to.be.a('string').and.not.empty; });",
+                  "pm.test('Latency telemetry headers exist', () => { ['X-First-Token-Ms','X-Last-Token-Ms','X-Cache-Hit-Percent'].forEach(n => pm.expect(pm.response.headers.get(n), n).to.be.ok); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Continuous turn 2 - follow-up",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"model\": \"{{model}}\",\n  \"messages\": [\n    {\"role\": \"system\", \"content\": \"You are a concise homelab ops assistant.\"},\n    {\"role\": \"user\", \"content\": \"We run llm-studio behind Traefik on VPN. What port should DSH use for the API?\"},\n    {\"role\": \"assistant\", \"content\": \"{{lastAssistantReply}}\"},\n    {\"role\": \"user\", \"content\": \"Thanks. If OpenObserve is on 15080, what should I leave free on a 4-vCPU host?\"}\n  ],\n  \"max_tokens\": 80,\n  \"temperature\": 0,\n  \"chat_template_kwargs\": {\"enable_thinking\": false}\n}"
+            },
+            "url": "{{baseUrl}}/v1/chat/completions"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "const b = pm.response.json();",
+                  "pm.environment.set('lastAssistantReply', b.choices[0].message.content);",
+                  "pm.test('Assistant content is non-empty', () => pm.expect(b.choices[0].message.content).to.be.a('string').and.not.empty);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Continuous turn 1 saves reply",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"model\": \"{{model}}\",\n  \"messages\": [\n    {\"role\": \"system\", \"content\": \"You are a concise homelab ops assistant.\"},\n    {\"role\": \"user\", \"content\": \"We run llm-studio behind Traefik on VPN. What port should DSH use for the API?\"}\n  ],\n  \"max_tokens\": 80,\n  \"temperature\": 0,\n  \"chat_template_kwargs\": {\"enable_thinking\": false}\n}"
+            },
+            "url": "{{baseUrl}}/v1/chat/completions"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "const b = pm.response.json();",
+                  "pm.environment.set('lastAssistantReply', b.choices[0].message.content);",
+                  "pm.test('Saved lastAssistantReply', () => pm.expect(pm.environment.get('lastAssistantReply')).to.be.ok);"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Vision - simple and complicated",
+      "description": "Requires a vision-capable model (Qwen3.5-0.8B or Qwen3.5-2B). Images are embedded data URLs from postman/fixtures/vision*.",
+      "item": [
+        {
+          "name": "Simple object - mug",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"model\": \"{{model}}\",\n  \"messages\": [\n    {\"role\": \"user\", \"content\": [\n      {\"type\": \"text\", \"text\": \"What single everyday object sits on the desk? Reply with one word.\"},\n      {\"type\": \"image_url\", \"image_url\": {\"url\": \"{{simpleImageDataUrl}}\"}}\n    ]}\n  ],\n  \"max_tokens\": 64,\n  \"temperature\": 0,\n  \"chat_template_kwargs\": {\"enable_thinking\": false}\n}"
+            },
+            "url": "{{baseUrl}}/v1/chat/completions"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Assistant content is non-empty', () => { const b = pm.response.json(); pm.expect(b.choices[0].message.content).to.be.a('string').and.not.empty; });",
+                  "pm.test('Latency telemetry headers exist', () => { ['X-First-Token-Ms','X-Last-Token-Ms','X-Cache-Hit-Percent'].forEach(n => pm.expect(pm.response.headers.get(n), n).to.be.ok); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Simple panels",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"model\": \"{{model}}\",\n  \"messages\": [\n    {\"role\": \"user\", \"content\": [\n      {\"type\": \"text\", \"text\": \"What single How many distinct color panels are visible? Reply with one number.\"},\n      {\"type\": \"image_url\", \"image_url\": {\"url\": \"{{panelsImageDataUrl}}\"}}\n    ]}\n  ],\n  \"max_tokens\": 64,\n  \"temperature\": 0,\n  \"chat_template_kwargs\": {\"enable_thinking\": false}\n}"
+            },
+            "url": "{{baseUrl}}/v1/chat/completions"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Assistant content is non-empty', () => { const b = pm.response.json(); pm.expect(b.choices[0].message.content).to.be.a('string').and.not.empty; });",
+                  "pm.test('Latency telemetry headers exist', () => { ['X-First-Token-Ms','X-Last-Token-Ms','X-Cache-Hit-Percent'].forEach(n => pm.expect(pm.response.headers.get(n), n).to.be.ok); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Complicated - nature wallpaper",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"model\": \"{{model}}\",\n  \"messages\": [\n    {\"role\": \"user\", \"content\": [\n      {\"type\": \"text\", \"text\": \"Describe the scene in one sentence (sky, land/water, vegetation).\"},\n      {\"type\": \"image_url\", \"image_url\": {\"url\": \"{{natureWallpaperDataUrl}}\"}}\n    ]}\n  ],\n  \"max_tokens\": 96,\n  \"temperature\": 0,\n  \"chat_template_kwargs\": {\"enable_thinking\": false}\n}"
+            },
+            "url": "{{baseUrl}}/v1/chat/completions"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Assistant content is non-empty', () => { const b = pm.response.json(); pm.expect(b.choices[0].message.content).to.be.a('string').and.not.empty; });",
+                  "pm.test('Latency telemetry headers exist', () => { ['X-First-Token-Ms','X-Last-Token-Ms','X-Cache-Hit-Percent'].forEach(n => pm.expect(pm.response.headers.get(n), n).to.be.ok); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Complicated - desk scene",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"model\": \"{{model}}\",\n  \"messages\": [\n    {\"role\": \"user\", \"content\": [\n      {\"type\": \"text\", \"text\": \"List three objects you can see on or near the desk, comma-separated.\"},\n      {\"type\": \"image_url\", \"image_url\": {\"url\": \"{{deskSceneDataUrl}}\"}}\n    ]}\n  ],\n  \"max_tokens\": 96,\n  \"temperature\": 0,\n  \"chat_template_kwargs\": {\"enable_thinking\": false}\n}"
+            },
+            "url": "{{baseUrl}}/v1/chat/completions"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Assistant content is non-empty', () => { const b = pm.response.json(); pm.expect(b.choices[0].message.content).to.be.a('string').and.not.empty; });",
+                  "pm.test('Latency telemetry headers exist', () => { ['X-First-Token-Ms','X-Last-Token-Ms','X-Cache-Hit-Percent'].forEach(n => pm.expect(pm.response.headers.get(n), n).to.be.ok); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Simple object - mug (Qwen3.5-2B)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"model\": \"{{qwen35_2b_model}}\",\n  \"messages\": [\n    {\"role\": \"user\", \"content\": [\n      {\"type\": \"text\", \"text\": \"What single everyday object sits on the desk? Reply with one word.\"},\n      {\"type\": \"image_url\", \"image_url\": {\"url\": \"{{simpleImageDataUrl}}\"}}\n    ]}\n  ],\n  \"max_tokens\": 64,\n  \"temperature\": 0,\n  \"chat_template_kwargs\": {\"enable_thinking\": false}\n}"
+            },
+            "url": "{{baseUrl}}/v1/chat/completions"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Assistant content is non-empty', () => { const b = pm.response.json(); pm.expect(b.choices[0].message.content).to.be.a('string').and.not.empty; });",
+                  "pm.test('Latency telemetry headers exist', () => { ['X-First-Token-Ms','X-Last-Token-Ms','X-Cache-Hit-Percent'].forEach(n => pm.expect(pm.response.headers.get(n), n).to.be.ok); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Complicated - nature (Qwen3.5-2B)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"model\": \"{{qwen35_2b_model}}\",\n  \"messages\": [\n    {\"role\": \"user\", \"content\": [\n      {\"type\": \"text\", \"text\": \"Describe the scene in one sentence (sky, land/water, vegetation).\"},\n      {\"type\": \"image_url\", \"image_url\": {\"url\": \"{{natureWallpaperDataUrl}}\"}}\n    ]}\n  ],\n  \"max_tokens\": 96,\n  \"temperature\": 0,\n  \"chat_template_kwargs\": {\"enable_thinking\": false}\n}"
+            },
+            "url": "{{baseUrl}}/v1/chat/completions"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Assistant content is non-empty', () => { const b = pm.response.json(); pm.expect(b.choices[0].message.content).to.be.a('string').and.not.empty; });",
+                  "pm.test('Latency telemetry headers exist', () => { ['X-First-Token-Ms','X-Last-Token-Ms','X-Cache-Hit-Percent'].forEach(n => pm.expect(pm.response.headers.get(n), n).to.be.ok); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
       "name": "Advanced LLM Examples",
       "description": "Complex prompting, reasoning, natural communication, multimodal image analysis, concurrency behavior, and explicit client-managed memory.",
       "item": [
@@ -590,8 +1263,8 @@
                       "const limit = Number(pm.environment.get('maxConcurrentRequests') || 1);",
                       "pm.test('Every concurrent response is captured', () => pm.expect(results).to.have.length(count));",
                       "pm.test('Queued coding-agent requests all succeed', () => pm.expect(results.every(r => r.status === 200)).to.eql(true));",
-                      "pm.test('Every request eventually runs', () => pm.expect(results.filter(r => r.status === 200)).to.have.length(count));"
-                      ,"pm.test('Batch shares session, correlation, and trace IDs', () => { pm.expect(new Set(results.map(r => r.sessionId))).to.have.property('size', 1); pm.expect(results[0].sessionId).to.eql(pm.variables.get('concurrentSessionId')); pm.expect(new Set(results.map(r => r.correlationId))).to.have.property('size', 1); pm.expect(new Set(results.map(r => r.traceId))).to.have.property('size', 1); });",
+                      "pm.test('Every request eventually runs', () => pm.expect(results.filter(r => r.status === 200)).to.have.length(count));",
+                      "pm.test('Batch shares session, correlation, and trace IDs', () => { pm.expect(new Set(results.map(r => r.sessionId))).to.have.property('size', 1); pm.expect(results[0].sessionId).to.eql(pm.variables.get('concurrentSessionId')); pm.expect(new Set(results.map(r => r.correlationId))).to.have.property('size', 1); pm.expect(new Set(results.map(r => r.traceId))).to.have.property('size', 1); });",
                       "pm.test('Every execution, span, and request ID is unique', () => { ['executionId', 'spanId', 'requestId'].forEach(field => pm.expect(new Set(results.map(r => r[field])).size, field).to.eql(count)); });",
                       "pm.test('Every result has token timing, cache, counts, and Server-Timing', () => pm.expect(results.every(r => Number.isFinite(r.firstTokenMs) && Number.isFinite(r.lastTokenMs) && r.firstTokenMs <= r.lastTokenMs && Number.isFinite(r.cacheHitPercent) && Number.isFinite(r.inputTokens) && Number.isFinite(r.outputTokens) && r.serverTiming.includes('first-token'))).to.eql(true));"
                     ]
@@ -785,7 +1458,12 @@
               "name": "GGUF KV Cache - Warm Coding Prefix",
               "request": {
                 "method": "POST",
-                "header": [{"key": "Content-Type", "value": "application/json"}],
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
                 "body": {
                   "mode": "raw",
                   "raw": "{\n  \"model\": \"{{qwen3_8b_model}}\",\n  \"messages\": [\n    {\"role\": \"system\", \"content\": \"You are a coding agent. Inspect requirements carefully, preserve existing behavior, explain risks briefly, and return production-ready Python. The project uses FastAPI, Pydantic v2, pytest, strict typing, structured logging, API-key authentication, and must remain backward compatible.\"},\n    {\"role\": \"user\", \"content\": \"Design a retry helper with exponential backoff and jitter. Return the interface and tests.\"}\n  ],\n  \"reasoning_effort\": \"low\",\n  \"max_tokens\": 256,\n  \"temperature\": 0.2\n}"
@@ -793,18 +1471,31 @@
                 "url": "{{baseUrl}}/v1/chat/completions",
                 "description": "Run first to populate the GGUF RAM prompt/KV cache with a realistic coding-agent prefix."
               },
-              "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
-                "pm.test('Status is 200', () => pm.response.to.have.status(200));",
-                "pm.test('Cross-request prompt cache is enabled', () => pm.expect(pm.response.headers.get('X-KV-Cache')).to.eql('enabled; scope=prompt-and-generation'));",
-                "pm.environment.set('kvCacheWarmHitPercent', pm.response.headers.get('X-Cache-Hit-Percent') || '0');",
-                "pm.environment.set('kvCacheWarmMs', String(pm.response.responseTime));"
-              ]}}]
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                      "pm.test('Cross-request prompt cache is enabled', () => pm.expect(pm.response.headers.get('X-KV-Cache')).to.eql('enabled; scope=prompt-and-generation'));",
+                      "pm.environment.set('kvCacheWarmHitPercent', pm.response.headers.get('X-Cache-Hit-Percent') || '0');",
+                      "pm.environment.set('kvCacheWarmMs', String(pm.response.responseTime));"
+                    ]
+                  }
+                }
+              ]
             },
             {
               "name": "GGUF KV Cache - Reuse Coding Prefix",
               "request": {
                 "method": "POST",
-                "header": [{"key": "Content-Type", "value": "application/json"}],
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
                 "body": {
                   "mode": "raw",
                   "raw": "{\n  \"model\": \"{{qwen3_8b_model}}\",\n  \"messages\": [\n    {\"role\": \"system\", \"content\": \"You are a coding agent. Inspect requirements carefully, preserve existing behavior, explain risks briefly, and return production-ready Python. The project uses FastAPI, Pydantic v2, pytest, strict typing, structured logging, API-key authentication, and must remain backward compatible.\"},\n    {\"role\": \"user\", \"content\": \"Now implement a circuit breaker using the same engineering constraints.\"}\n  ],\n  \"reasoning_effort\": \"low\",\n  \"max_tokens\": 256,\n  \"temperature\": 0.2\n}"
@@ -812,13 +1503,21 @@
                 "url": "{{baseUrl}}/v1/chat/completions",
                 "description": "Run immediately after Warm Coding Prefix so llama.cpp can restore the shared system prefix from its RAM cache."
               },
-              "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
-                "pm.test('Status is 200', () => pm.response.to.have.status(200));",
-                "pm.test('Cross-request prompt cache remains enabled', () => pm.expect(pm.response.headers.get('X-KV-Cache')).to.eql('enabled; scope=prompt-and-generation'));",
-                "pm.test('Warm-cache telemetry is reported', () => pm.expect(Number(pm.response.headers.get('X-Cache-Hit-Percent'))).to.be.within(0, 100));",
-                "pm.environment.set('kvCacheReuseHitPercent', pm.response.headers.get('X-Cache-Hit-Percent') || '0');",
-                "pm.environment.set('kvCacheReuseMs', String(pm.response.responseTime));"
-              ]}}]
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                      "pm.test('Cross-request prompt cache remains enabled', () => pm.expect(pm.response.headers.get('X-KV-Cache')).to.eql('enabled; scope=prompt-and-generation'));",
+                      "pm.test('Warm-cache telemetry is reported', () => pm.expect(Number(pm.response.headers.get('X-Cache-Hit-Percent'))).to.be.within(0, 100));",
+                      "pm.environment.set('kvCacheReuseHitPercent', pm.response.headers.get('X-Cache-Hit-Percent') || '0');",
+                      "pm.environment.set('kvCacheReuseMs', String(pm.response.responseTime));"
+                    ]
+                  }
+                }
+              ]
             }
           ]
         }
@@ -832,31 +1531,88 @@
           "name": "Qwen3 8B - Refactor Request",
           "request": {
             "method": "POST",
-            "header": [{"key": "Content-Type", "value": "application/json"}],
-            "body": {"mode": "raw", "raw": "{\n  \"model\": \"{{qwen3_8b_model}}\",\n  \"messages\": [\n    {\"role\": \"system\", \"content\": \"Act as a careful coding agent. Return a concise plan followed by production-ready Python and pytest tests.\"},\n    {\"role\": \"user\", \"content\": \"Refactor a synchronous retry loop into a reusable async retry helper with cancellation safety, exponential backoff, bounded jitter, type hints, and dependency-injected sleep.\"}\n  ],\n  \"reasoning_effort\": \"low\",\n  \"max_tokens\": 512,\n  \"temperature\": 0.2\n}"},
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"model\": \"{{qwen3_8b_model}}\",\n  \"messages\": [\n    {\"role\": \"system\", \"content\": \"Act as a careful coding agent. Return a concise plan followed by production-ready Python and pytest tests.\"},\n    {\"role\": \"user\", \"content\": \"Refactor a synchronous retry loop into a reusable async retry helper with cancellation safety, exponential backoff, bounded jitter, type hints, and dependency-injected sleep.\"}\n  ],\n  \"reasoning_effort\": \"low\",\n  \"max_tokens\": 512,\n  \"temperature\": 0.2\n}"
+            },
             "url": "{{baseUrl}}/v1/chat/completions"
           },
-          "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": ["pm.test('Qwen3 8B succeeds', () => pm.response.to.have.status(200));", "pm.test('Answer is non-empty', () => pm.expect(pm.response.json().choices[0].message.content).to.be.a('string').and.not.empty);"]}}]
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Qwen3 8B succeeds', () => pm.response.to.have.status(200));",
+                  "pm.test('Answer is non-empty', () => pm.expect(pm.response.json().choices[0].message.content).to.be.a('string').and.not.empty);"
+                ]
+              }
+            }
+          ]
         },
         {
           "name": "DeepSeek R1 7B - Debug Request",
           "request": {
             "method": "POST",
-            "header": [{"key": "Content-Type", "value": "application/json"}],
-            "body": {"mode": "raw", "raw": "{\n  \"model\": \"{{deepseek_r1_7b_model}}\",\n  \"messages\": [\n    {\"role\": \"system\", \"content\": \"Act as a debugging coding agent. Separate observed evidence from hypotheses and propose the smallest safe fix.\"},\n    {\"role\": \"user\", \"content\": \"A FastAPI endpoint intermittently returns 500 because a background thread mutates a shared dictionary while requests iterate it. Diagnose the race and provide a thread-safe implementation plus a regression test.\"}\n  ],\n  \"reasoning_effort\": \"medium\",\n  \"max_tokens\": 512,\n  \"temperature\": 0.2\n}"},
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"model\": \"{{deepseek_r1_7b_model}}\",\n  \"messages\": [\n    {\"role\": \"system\", \"content\": \"Act as a debugging coding agent. Separate observed evidence from hypotheses and propose the smallest safe fix.\"},\n    {\"role\": \"user\", \"content\": \"A FastAPI endpoint intermittently returns 500 because a background thread mutates a shared dictionary while requests iterate it. Diagnose the race and provide a thread-safe implementation plus a regression test.\"}\n  ],\n  \"reasoning_effort\": \"medium\",\n  \"max_tokens\": 512,\n  \"temperature\": 0.2\n}"
+            },
             "url": "{{baseUrl}}/v1/chat/completions"
           },
-          "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": ["pm.test('DeepSeek R1 7B succeeds', () => pm.response.to.have.status(200));", "pm.test('Assistant message exists', () => pm.expect(pm.response.json().choices[0].message).to.be.an('object'));"]}}]
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('DeepSeek R1 7B succeeds', () => pm.response.to.have.status(200));",
+                  "pm.test('Assistant message exists', () => pm.expect(pm.response.json().choices[0].message).to.be.an('object'));"
+                ]
+              }
+            }
+          ]
         },
         {
           "name": "Llama 3.1 8B - Review Request",
           "request": {
             "method": "POST",
-            "header": [{"key": "Content-Type", "value": "application/json"}],
-            "body": {"mode": "raw", "raw": "{\n  \"model\": \"{{llama31_8b_model}}\",\n  \"messages\": [\n    {\"role\": \"system\", \"content\": \"Review code for correctness, security, and maintainability. Prioritize findings and avoid inventing context.\"},\n    {\"role\": \"user\", \"content\": \"Review this pattern: an API accepts a user-supplied filesystem path and calls shutil.rmtree(path). Explain the vulnerabilities and provide a safe allowlisted deletion helper.\"}\n  ],\n  \"max_tokens\": 384,\n  \"temperature\": 0.2\n}"},
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"model\": \"{{llama31_8b_model}}\",\n  \"messages\": [\n    {\"role\": \"system\", \"content\": \"Review code for correctness, security, and maintainability. Prioritize findings and avoid inventing context.\"},\n    {\"role\": \"user\", \"content\": \"Review this pattern: an API accepts a user-supplied filesystem path and calls shutil.rmtree(path). Explain the vulnerabilities and provide a safe allowlisted deletion helper.\"}\n  ],\n  \"max_tokens\": 384,\n  \"temperature\": 0.2\n}"
+            },
             "url": "{{baseUrl}}/v1/chat/completions"
           },
-          "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": ["pm.test('Llama 3.1 8B succeeds', () => pm.response.to.have.status(200));", "pm.test('Review is non-empty', () => pm.expect(pm.response.json().choices[0].message.content).to.be.a('string').and.not.empty);"]}}]
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Llama 3.1 8B succeeds', () => pm.response.to.have.status(200));",
+                  "pm.test('Review is non-empty', () => pm.expect(pm.response.json().choices[0].message.content).to.be.a('string').and.not.empty);"
+                ]
+              }
+            }
+          ]
         }
       ]
     },

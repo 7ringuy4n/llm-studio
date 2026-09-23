@@ -5,7 +5,11 @@ an Ubuntu VPS. It exposes a small OpenAI-compatible REST surface while remaining
 isolated from an existing Hermes installation.
 
 For the hands-on learning sequence, start with the
-[AI Model Training Handbook](docs/README.md).
+[AI Model Training Handbook](docs/README.md). Project release notes live in
+[docs/CHANGELOG.md](docs/CHANGELOG.md) and [docs/HISTORY.md](docs/HISTORY.md);
+verification is indexed under [test/README.md](test/README.md) and
+[test/REPORT.md](test/REPORT.md). Agent rules: [rule/AGENT_RULES.md](rule/AGENT_RULES.md).
+Root-cause history: [history/README.md](history/README.md).
 
 The configured upstream model identifier is
 [`Qwen/Qwen3.5-0.8B`](https://huggingface.co/Qwen/Qwen3.5-0.8B), as published by
@@ -288,7 +292,7 @@ MODEL_GGUF_CONTEXT_TOKENS=32768
 MODEL_KV_CACHE_BYTES=2147483648
 MODEL_CONTEXT_TOKENS=262144
 MODEL_MAX_INPUT_TOKENS=262144
-MODEL_MAX_NEW_TOKENS=2048
+MODEL_MAX_NEW_TOKENS=32768
 LLM_STUDIO_REQUEST_TIMEOUT_SECONDS=900
 LLM_STUDIO_QUEUE_TIMEOUT_SECONDS=900
 ```

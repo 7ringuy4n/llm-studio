@@ -2,6 +2,12 @@
 from __future__ import annotations
 
 import sys
+from pathlib import Path
+
+_ROOT = Path(__file__).resolve().parents[2]
+if str(_ROOT) not in sys.path:
+    sys.path.insert(0, str(_ROOT))
+
 import types
 from unittest.mock import patch
 
@@ -61,6 +67,9 @@ def main() -> None:
         runtime.load(spec.id)
         assert runtime.loaded_model_id == spec.id
         assert isinstance(runtime._model, FakeLlama)
+        assert runtime._model.kwargs.get("n_batch") == 512
+        assert runtime._model.kwargs.get("n_ubatch") == 512
+        assert runtime._model.kwargs.get("use_mmap") is True
         assert runtime._model.cache is not None
         result = runtime.generate(
             ChatCompletionRequest(

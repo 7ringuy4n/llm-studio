@@ -52,7 +52,7 @@ stop:
 	@source scripts/common.sh && assert_env_file && compose stop
 
 restart:
-	@source scripts/common.sh && assert_env_file && compose restart api
+	@source scripts/common.sh && assert_env_file && compose up -d --force-recreate --no-deps api
 
 status:
 	@source scripts/common.sh && assert_env_file && compose ps
@@ -105,4 +105,19 @@ restore:
 	@./scripts/restore_data.sh "$(BACKUP_DIR)" $(if $(DATA_DIR),"$(DATA_DIR)",)
 
 test:
-	@./tests/run.sh
+	@./test/run.sh
+
+test-all:
+	@./test/run_all.sh
+
+test-models:
+	@python3 test/scripts/all_models_prompt_contract.py
+
+test-realworld:
+	@python3 test/scripts/realworld_api_contract.py
+
+test-dsh:
+	@python3 test/scripts/dsh_harness_contract.py
+
+test-vision:
+	@python3 test/scripts/vision_contract.py

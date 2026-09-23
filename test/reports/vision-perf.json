@@ -1,0 +1,68 @@
+{
+  "results": [
+    {
+      "model": "Qwen/Qwen3.5-0.8B",
+      "case": "Qwen/Qwen3.5-0.8B::simple_color_panels",
+      "image": "simple-color-panels.png",
+      "wall_ms": 112946,
+      "first_token_ms": "921.0",
+      "answer_preview": "There are 3 distinct color panels visible: red, green, and blue.\n\nAnswer: 3"
+    },
+    {
+      "model": "Qwen/Qwen3.5-0.8B",
+      "case": "Qwen/Qwen3.5-0.8B::simple_object_mug",
+      "image": "simple-object-mug.png",
+      "wall_ms": 3060,
+      "first_token_ms": "1186.2",
+      "answer_preview": "coffee cup\n\n</think>\n\ncoffee cup\n\n</think>\n\ncoffee cup\n\n</think>\n\ncoffee cup"
+    },
+    {
+      "model": "Qwen/Qwen3.5-0.8B",
+      "case": "Qwen/Qwen3.5-0.8B::complicated_nature_wallpaper",
+      "image": "complicated-nature-wallpaper.png",
+      "wall_ms": 12605,
+      "first_token_ms": "4974.0",
+      "answer_preview": "The scene depicts a serene landscape where a calm blue lake stretches across the foreground, bordered by a dense line of green pine trees that rise up to meet the gray, silhouetted mountains in the ba"
+    },
+    {
+      "model": "Qwen/Qwen3.5-0.8B",
+      "case": "Qwen/Qwen3.5-0.8B::complicated_desk_scene",
+      "image": "complicated-desk-scene.png",
+      "wall_ms": 7383,
+      "first_token_ms": "3619.0",
+      "answer_preview": "1. TV\n2. Tree\n3. Computer mouse\n\nThese are three objects visible on or near the desk in the image."
+    },
+    {
+      "model": "Qwen/Qwen3.5-2B",
+      "case": "Qwen/Qwen3.5-2B::simple_color_panels",
+      "image": "simple-color-panels.png",
+      "wall_ms": 18032,
+      "first_token_ms": "4441.4",
+      "answer_preview": "3.3333333333333335"
+    },
+    {
+      "model": "Qwen/Qwen3.5-2B",
+      "case": "Qwen/Qwen3.5-2B::simple_object_mug",
+      "image": "simple-object-mug.png",
+      "wall_ms": 16509,
+      "first_token_ms": "3063.7",
+      "answer_preview": "pen holder.\nThe image shows a blue object with a rounded body and a rectangular base, resembling a pen holder. It is positioned on a desk surface, which is implied by the context. Therefore, the singl"
+    },
+    {
+      "model": "Qwen/Qwen3.5-2B",
+      "case": "Qwen/Qwen3.5-2B::complicated_nature_wallpaper",
+      "image": "complicated-nature-wallpaper.png",
+      "wall_ms": 28083,
+      "first_token_ms": "11690.6",
+      "answer_preview": "A serene landscape features a calm blue lake reflecting the sky, with a dense line of dark green coniferous trees lining its shore, behind which rise three layered gray-blue mountains under a soft gra"
+    },
+    {
+      "model": "Qwen/Qwen3.5-2B",
+      "case": "Qwen/Qwen3.5-2B::complicated_desk_scene",
+      "image": "complicated-desk-scene.png",
+      "wall_ms": 13754,
+      "first_token_ms": "8972.4",
+      "answer_preview": "computer monitor, sticky notes, tree, desk, computer stand, sound waves, brown surface"
+    }
+  ]
+}
