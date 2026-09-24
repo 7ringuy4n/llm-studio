@@ -1,3 +1,30 @@
+## 2026-09-24 — OpenCode + DSH catalog auto-compact proofs
+
+- OpenCode auto-compact flood (`test/scripts/opencode_compact_flood.sh`) with
+  `limit.input` so `compaction.reserved` applies; token-drop detector.
+- Catalog cycle driver `test/scripts/catalog_compact_cycle.py` (per-model pull,
+  Modelfile `num_ctx`, DSH Standard + OpenCode, cleanup between models).
+- Small-ctx (≤40k) **PASS** both agents: 0.8B, 2B, 1.7B, 4B, 8B. Prior: OpenCode
+  9B@128k + 27B@64k; DSH 9B@128k.
+- Report: DSH vs OpenCode cost/quota verdict (DSH earlier trigger on 9B).
+- Artifacts under `docs/perf-results/*compact*` / `catalog-compact-cycle.jsonl`.
+
+## 2026-09-24 — Drop history/task_on_progress; coding-agent max-ctx compact
+
+- Removed `history/task_on_progress.md`; handoff lives in dated `history/` +
+  agent-memory only.
+- Continuous **coding-agent** growth to near-max context: API lab
+  `coding_agent_max_ctx_compact_lab.py`; DSH Standard flood grows coding turns
+  and **continues after compact** (`DSH_COMPACT_CONTINUE_AFTER`).
+
+## 2026-09-24 — Catalog +4B/+9B; Vast cycle overhead & KV
+
+- Added `Qwen/Qwen3.5-4B` and `Qwen/Qwen3.5-9B` (multimodal) to `configs/models.json`.
+- `vast_catalog_cycle_lab.py`: OLLAMA_MAP for `qwen3.5:4b` / `qwen3.5:9b`; default SSH
+  Vast host from lab-temp; per-model **runtime overhead** (idle→resident VRAM) +
+  **KV cache cold/warm** summary rows in `vast-all-models-cycle.jsonl`.
+- Report/HARDWARE updates follow measured cycle results.
+
 ## 2026-09-23 — Hardware: CPU VPS + Vast per model
 
 - `docs/HARDWARE.md` and `model-statistic-report.md` §8 now list **both** CPU VPS

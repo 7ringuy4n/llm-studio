@@ -1,0 +1,10 @@
+{"agent": "dsh", "catalog_key": "Qwen/Qwen3.5-0.8B", "alias": "qwen3.5:0.8b-ctx32k", "ctx": 32768, "result": "PASS", "detail": "auto_turn=4"}
+{"agent": "opencode", "catalog_key": "Qwen/Qwen3.5-0.8B", "alias": "qwen3.5:0.8b-ctx32k", "ctx": 32768, "result": "PASS"}
+{"agent": "dsh", "catalog_key": "Qwen/Qwen3.5-2B", "alias": "qwen3.5:2b-ctx32k", "ctx": 32768, "result": "PASS", "detail": "auto_turn=9"}
+{"agent": "opencode", "catalog_key": "Qwen/Qwen3.5-2B", "alias": "qwen3.5:2b-ctx32k", "ctx": 32768, "result": "PASS"}
+{"agent": "dsh", "catalog_key": "Qwen/Qwen3-1.7B", "alias": "qwen3:1.7b-ctx32k", "ctx": 32768, "result": "PASS", "detail": "auto_turn=6"}
+{"agent": "opencode", "catalog_key": "Qwen/Qwen3-1.7B", "alias": "qwen3:1.7b-ctx32k", "ctx": 32768, "result": "PASS"}
+{"agent": "dsh", "catalog_key": "Qwen/Qwen3.5-4B", "alias": "qwen3.5:4b-ctx32k", "ctx": 32768, "result": "PASS", "detail": "auto_turn=6"}
+{"agent": "opencode", "catalog_key": "Qwen/Qwen3.5-4B", "alias": "qwen3.5:4b-ctx32k", "ctx": 32768, "result": "PASS"}
+{"agent": "dsh", "catalog_key": "Qwen/Qwen3-8B", "alias": "qwen3:8b-ctx40k", "ctx": 40960, "result": "PASS", "detail": "auto_turn=8"}
+{"agent": "opencode", "catalog_key": "Qwen/Qwen3-8B", "alias": "qwen3:8b-ctx40k", "ctx": 40960, "result": "PASS"}

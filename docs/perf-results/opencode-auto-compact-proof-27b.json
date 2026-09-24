@@ -1,0 +1,25 @@
+{
+  "kind": "opencode-auto-compact-proof",
+  "sessionID": "ses_f2db54776ffeobUb0ZsKvdoBhx",
+  "model": "ollama/qwen3.8:27b-ctx64k",
+  "test_context_tokens": 65536,
+  "reserved": 16384,
+  "limit_input": 65536,
+  "result": "PASS",
+  "evidence": {
+    "compaction_part": {
+      "type": "compaction",
+      "auto": true,
+      "overflow": false
+    },
+    "tokens_before": 48268,
+    "tokens_after": 17332,
+    "summary_tokens": {
+      "total": 33858,
+      "input": 33499,
+      "output": 359
+    },
+    "summary_finish": "stop",
+    "note": "limit.input required for reserved to apply; trigger ~ input-reserved"
+  }
+}

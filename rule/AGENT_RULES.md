@@ -46,7 +46,7 @@ Never sacrifice correctness or isolation merely to make a test pass.
   credentials. Never print Bearer tokens in reports.
 - Always ask the user before creating merge requests or pushing.
 - Before work: read `docs/CHANGELOG.md`, `docs/HISTORY.md`, and
-  `history/task_on_progress.md`.
+  dated folders under `history/`.
 - When running tests, print progress as `running test case N/M`. If a
   failure is a real core bug, fix the core and re-run.
 - **Client Stop / abort:** generation must be cancellable on the VPS. Prefer
@@ -70,10 +70,12 @@ Never sacrifice correctness or isolation merely to make a test pass.
 - **DSH modes:** harness / browser labs run **`minimal`**, **`minimal + web`**,
   and **`standard`** presets (`agent-presets.default` / Minimal + Web), via
   `test/scripts/dsh_harness_contract.py` and BrowserSkill when authorized.
-- **DSH auto-compact (web):** continuous-send flood in **Standard mode** on
-  **homelab** until compact UI or overflow — `rule/DSH_COMPACT_FLOOD.md` +
-  `test/scripts/dsh_web_compact_flood.sh`. Minimal mode must not be used as
-  the compact SoT (compaction absent).
+- **DSH auto-compact / continue (web):** continuous **coding-agent** flood in
+  **Standard mode** growing toward max `contextWindow` until compact UI,
+  overflow, or continue-OK — `rule/DSH_COMPACT_FLOOD.md` +
+  `test/scripts/dsh_web_compact_flood.sh`. After compact, send continue turns.
+  API continuous growth: `test/scripts/coding_agent_max_ctx_compact_lab.py`.
+  Minimal mode must not be used as the compact SoT (compaction absent).
 - **Reasoning × cache:** live labs must cover **both cache hit and no-cache**
   paths when switching `reasoning_effort` (same shared prefix, change effort).
   Use `test/scripts/reasoning_cache_contract.py` (warm same-effort → expect
@@ -101,8 +103,7 @@ Traefik, Docker, and the kernel. Change only after a measured matrix
 ## 4. History entries
 
 Dated folders under `history/YYYY-MM-DD/` must include Technical detail
-(env keys bad→fixed, functions, API fields). Update
-`history/task_on_progress.md` while working.
+(env keys bad→fixed, functions, API fields).
 
 ------------------------------------------------------------------------
 
@@ -114,8 +115,9 @@ Dated folders under `history/YYYY-MM-DD/` must include Technical detail
 - Live (VPN): reasoning-effort **cache hit + miss**
   (`test/scripts/reasoning_cache_contract.py`)
 - DSH harness: `test/scripts/dsh_harness_contract.py` (headless, all models)
-- DSH web compact: `test/scripts/dsh_web_compact_flood.sh` (**Standard** mode,
-  bsk; rules in `rule/DSH_COMPACT_FLOOD.md`)
+- DSH web compact/continue: `test/scripts/dsh_web_compact_flood.sh`
+  (**Standard** coding-agent max-ctx flood; `rule/DSH_COMPACT_FLOOD.md`)
+- API coding-agent max-ctx: `test/scripts/coding_agent_max_ctx_compact_lab.py`
 - Optional: `test/scripts/web_search_contract.py`
 - Browser checks (OpenObserve / DSH) use the operator browser skill when
   authorized; exercise **all** living models in the UI when that lab is

@@ -37,13 +37,15 @@ and the OS had no spare core. Keep **3.0** as the always-on default. Details:
 
 | Model | Backend | CPU VPS min → comfort | Vast GPU VRAM (measured) | HDD weights (Ollama pull, measured) | Coding fit | Cache / notes |
 |-------|---------|----------------------|--------------------------|--------------------------------------|------------|---------------|
-| Qwen3.5-0.8B | HF / Ollama | 4c / 16 GiB → same | **~2.7 GB** | **1.0 GB** | **No** — chat/vision only | Ollama cache-warm ~86%; HF CPU cache% 0 |
-| Qwen3.5-2B | HF / Ollama | 4c / 16 GiB → same | **~4.5 GB** | **2.7 GB** | **No** — chat/vision only | Ollama cache-warm ~86% |
-| Qwen3-1.7B | HF / Ollama | 4c / 12 GiB → 16 GiB | **~6.3 GB** | **1.4 GB** | **No** — text smoke only | Enable on CPU `MODEL_ALLOWED_MODELS`; Vast OK |
-| Qwen3-8B Q4 | GGUF / Ollama | 4c / 16 GiB → 16+ GiB | **~11.3 GB** | **5.2 GB** | **Conditional** — snippets if thinking off + higher `max_tokens`; not primary coding agent | Long-2k ~9s GPU vs ~141s CPU |
-| DeepSeek-R1 7B Q4 | GGUF / Ollama | 4c / 16 GiB → 16+ GiB | **~9.0 GB** | **4.7 GB** | **Conditional** — hard reasoning coding with large token budget; weak on exact short replies | Long-2k ~7s GPU vs ~130s CPU |
-| Llama 3.1 8B Q4 | GGUF / Ollama | 4c / 16 GiB → 16+ GiB | **~13.6 GB** | **4.9 GB** | **Yes** — best ≤8B for exact coding replies (Vast lab **PASS**) | OCR+coding PASS on Vast |
-| **Qwen3.8 27B Q4** | **Vast Ollama** | **Not on 16 GiB CPU** | **~20–22 GB** @ 64k | **~17 GB** | **Yes (primary)** — Vast coding-agent pick; give enough `max_tokens` | Need container **≥40 GB** HDD |
+| Qwen3.5-0.8B | HF / Ollama | 4c / 16 GiB → same | **~2.0 GB** | **1.0 GB** | **No** — chat/vision only | Ollama cache-warm ~86%; HF CPU cache% 0 |
+| Qwen3.5-2B | HF / Ollama | 4c / 16 GiB → same | **~3.7 GB** | **2.7 GB** | **No** — chat/vision only | Ollama cache-warm ~86% |
+| Qwen3.5-4B | HF / Ollama | 4c / 16 GiB → same | **~5.0 GB** | **3.4 GB** | **No** — multimodal chat; coding gate FAIL @32 | Ollama `qwen3.5:4b`; max-ctx continue **OK** |
+| Qwen3.5-9B | HF / Ollama | 4c / 16+ GiB → same | **~7.5 GB** | **6.6 GB** | **Conditional** — better multimodal; coding gate FAIL @32 | Ollama `qwen3.5:9b` |
+| Qwen3-1.7B | HF / Ollama | 4c / 12 GiB → 16 GiB | **~5.1 GB** | **1.4 GB** | **No** — text smoke only | Enable on CPU `MODEL_ALLOWED_MODELS`; Vast OK |
+| Qwen3-8B Q4 | GGUF / Ollama | 4c / 16 GiB → 16+ GiB | **~9.6 GB** | **5.2 GB** | **Conditional** — snippets if thinking off + higher `max_tokens`; not primary coding agent | Long-2k ~9s GPU vs ~141s CPU |
+| DeepSeek-R1 7B Q4 | GGUF / Ollama | 4c / 16 GiB → 16+ GiB | **~6.5 GB** | **4.7 GB** | **Conditional** — hard reasoning coding with large token budget; weak on exact short replies | Long-2k ~7s GPU vs ~130s CPU |
+| Llama 3.1 8B Q4 | GGUF / Ollama | 4c / 16 GiB → 16+ GiB | **~8.9 GB** | **4.9 GB** | **Yes** — best ≤8B for exact coding replies (Vast lab **PASS**) | OCR+coding PASS on Vast |
+| **Qwen3.8 27B Q4** | **Vast Ollama** | **Not on 16 GiB CPU** | **~21.8 GB** @ 64k | **~17 GB** | **Yes (primary)** — Vast coding-agent pick; give enough `max_tokens` | Need container **≥40 GB** HDD |
 
 | Lane | Min HDD | Comfortable HDD |
 |------|---------|-----------------|
