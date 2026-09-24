@@ -1,0 +1,24 @@
+{
+  "kind": "opencode-auto-compact-proof",
+  "catalog_key": "Qwen/Qwen3.5-4B",
+  "model": "ollama/qwen3.5:4b-ctx32k",
+  "test_context_tokens": 32768,
+  "reserved": 8192,
+  "result": "PASS",
+  "evidence": {
+    "type": "compaction",
+    "auto": true,
+    "overflow": false,
+    "summary_finish": "length",
+    "summary_tokens": {
+      "total": 10602,
+      "input": 10090,
+      "output": 512,
+      "reasoning": 0,
+      "cache": {
+        "write": 0,
+        "read": 0
+      }
+    }
+  }
+}

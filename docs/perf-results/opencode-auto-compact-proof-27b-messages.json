@@ -1,0 +1,48 @@
+{
+  "compaction_messages": [
+    {
+      "index": 68,
+      "info": {
+        "role": "user",
+        "mode": null,
+        "agent": "build",
+        "summary": {
+          "diffs": []
+        },
+        "finish": null,
+        "tokens": null,
+        "modelID": null
+      },
+      "parts": [
+        {
+          "type": "compaction",
+          "auto": true,
+          "overflow": false,
+          "id": "prt_0d2508ad2001ErZ9bJ1fAzJroe"
+        }
+      ]
+    },
+    {
+      "index": 69,
+      "info": {
+        "role": "assistant",
+        "mode": "compaction",
+        "agent": "compaction",
+        "summary": true,
+        "finish": "stop",
+        "tokens": {
+          "total": 33858,
+          "input": 33499,
+          "output": 359,
+          "reasoning": 0,
+          "cache": {
+            "write": 0,
+            "read": 0
+          }
+        },
+        "modelID": "qwen3.8:27b-ctx64k"
+      },
+      "parts": []
+    }
+  ]
+}

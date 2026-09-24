@@ -25,6 +25,33 @@
       "reasoning": true
     },
     {
+      "alias": "qwen35-4b",
+      "id": "Qwen/Qwen3.5-4B",
+      "name": "Qwen3.5 4B",
+      "backend": "multimodal",
+      "revision": "main",
+      "context_tokens": 262144,
+      "max_new_tokens": 32768,
+      "dtype": "auto",
+      "vision": true,
+      "reasoning": true
+    },
+    {
+      "alias": "qwen35-9b",
+      "id": "Qwen/Qwen3.5-9B",
+      "name": "Qwen3.5 9B",
+      "backend": "multimodal",
+      "revision": "main",
+      "context_tokens": 262144,
+      "test_context_tokens": 131072,
+      "max_new_tokens": 32768,
+      "dtype": "auto",
+      "vision": true,
+      "reasoning": true,
+      "ollama_model": "qwen3.5:9b-ctx128k",
+      "ollama_num_ctx": 131072
+    },
+    {
       "alias": "qwen3-1.7b",
       "id": "Qwen/Qwen3-1.7B",
       "name": "Qwen3 1.7B (text only)",
@@ -85,12 +112,14 @@
       "backend": "multimodal",
       "revision": "main",
       "context_tokens": 262144,
+      "test_context_tokens": 65536,
       "max_new_tokens": 32768,
       "dtype": "q4_k_m",
       "vision": true,
       "reasoning": true,
       "deployment": "vast-ollama",
-      "ollama_model": "qwen3.8:27b-ctx64k"
+      "ollama_model": "qwen3.8:27b-ctx64k",
+      "ollama_num_ctx": 65536
     }
   ]
 }

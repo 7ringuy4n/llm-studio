@@ -1,0 +1,28 @@
+{
+  "kind": "opencode-auto-compact-proof",
+  "catalog_key": "Qwen/Qwen3.5-2B",
+  "model": "ollama/qwen3.5:2b-ctx32k",
+  "test_context_tokens": 32768,
+  "reserved": 8192,
+  "result": "PASS",
+  "evidence": {
+    "token_drops": [
+      {
+        "turn": 8,
+        "before": 23329,
+        "after": 15368
+      },
+      {
+        "turn": 15,
+        "before": 23434,
+        "after": 15443
+      },
+      {
+        "turn": 22,
+        "before": 23415,
+        "after": 15468
+      }
+    ],
+    "note": "auto compact via repeated ~8k context cuts"
+  }
+}

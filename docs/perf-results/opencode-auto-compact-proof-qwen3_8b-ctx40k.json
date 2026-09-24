@@ -1,0 +1,29 @@
+{
+  "kind": "opencode-auto-compact-proof",
+  "catalog_key": "Qwen/Qwen3-8B",
+  "model": "ollama/qwen3:8b-ctx40k",
+  "test_context_tokens": 40960,
+  "reserved": 10240,
+  "result": "PASS",
+  "evidence": {
+    "type": "compaction",
+    "auto": true,
+    "overflow": false,
+    "summary_finish": "stop",
+    "summary_tokens": {
+      "total": 19920,
+      "input": 19444,
+      "output": 471,
+      "reasoning": 0,
+      "cache": {
+        "write": 0,
+        "read": 5
+      }
+    },
+    "token_drop": {
+      "before": 29125,
+      "after": 14660,
+      "turn": 11
+    }
+  }
+}
