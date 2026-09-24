@@ -41,6 +41,8 @@ if not VISION_IMG.is_file():
 OLLAMA_MAP = {
     "Qwen/Qwen3.5-0.8B": "qwen3.5:0.8b",
     "Qwen/Qwen3.5-2B": "qwen3.5:2b",
+    "Qwen/Qwen3.5-4B": "qwen3.5:4b",
+    "Qwen/Qwen3.5-9B": "qwen3.5:9b",
     "Qwen/Qwen3-1.7B": "qwen3:1.7b",
     "Qwen/Qwen3-8B": "qwen3:8b",
     "deepseek-ai/DeepSeek-R1-Distill-Qwen-7B": "deepseek-r1:7b",
@@ -48,8 +50,8 @@ OLLAMA_MAP = {
     "Qwen/Qwen3.8-27B": "qwen3.8:27b",
 }
 
-SSH_TARGET = os.environ.get("VAST_SSH", "root@159.48.242.16")
-SSH_PORT = os.environ.get("VAST_SSH_PORT", "58164")
+SSH_TARGET = os.environ.get("VAST_SSH", "root@50.217.254.165")
+SSH_PORT = os.environ.get("VAST_SSH_PORT", "40235")
 
 
 def fail(msg: str) -> None:
@@ -300,6 +302,43 @@ def run_model_suite(base: str, key: str, catalog_id: str, run_name: str, vision:
     return rows, n
 
 
+def disk_free_gb() -> float | None:
+    try:
+        out = remote("df -B1 / | awk 'NR==2{print $4}'", timeout=30).strip()
+        return round(int(out) / (1024**3), 2)
+    except Exception:  # noqa: BLE001
+        return None
+
+
+def ollama_size_gb(tag: str) -> float | None:
+    """Parse `ollama list` SIZE column for tag (e.g. 3.4 GB)."""
+    try:
+        out = remote("ollama list", timeout=60)
+        for line in out.splitlines()[1:]:
+            parts = line.split()
+            if not parts:
+                continue
+            name = parts[0]
+            if name == tag or name.startswith(tag.split(":")[0] + ":"):
+                # SIZE is usually 3rd token like "3.4" "GB" or combined
+                for i, p in enumerate(parts):
+                    if p.upper() in {"GB", "MB"} and i > 0:
+                        try:
+                            val = float(parts[i - 1])
+                        except ValueError:
+                            continue
+                        return round(val / 1024 if p.upper() == "MB" else val, 2)
+                # fallback: NAME ID SIZE UNIT
+                if len(parts) >= 3:
+                    try:
+                        return float(parts[2])
+                    except ValueError:
+                        pass
+        return None
+    except Exception:  # noqa: BLE001
+        return None
+
+
 def main() -> None:
     base = os.environ.get("VAST_TEST_BASE_URL", "").rstrip("/")
     key = os.environ.get("VAST_API_KEY") or os.environ.get("OPEN_BUTTON_TOKEN") or ""
@@ -326,6 +365,7 @@ def main() -> None:
             fh.write(json.dumps(row, ensure_ascii=False) + "\n")
 
     cleanup_all()
+    idle_gpu = gpu_stats()
 
     for i, spec in enumerate(specs):
         mid = spec["id"]
@@ -335,7 +375,14 @@ def main() -> None:
             continue
         print(f"\n######## [{i+1}/{len(specs)}] deploy {mid} -> {tag} ########", flush=True)
         try:
+            free_before = disk_free_gb()
             pull(tag)
+            free_after = disk_free_gb()
+            disk_pull_gb = (
+                round(free_before - free_after, 2)
+                if free_before is not None and free_after is not None
+                else ollama_size_gb(tag)
+            )
             run_name = tag
             if mid == "Qwen/Qwen3.8-27B":
                 # prefer already-ctx tag name in map if present
@@ -351,8 +398,44 @@ def main() -> None:
                 f"nvidia-smi --query-gpu=memory.used,memory.total --format=csv,noheader",
                 timeout=700,
             )
+            resident = gpu_stats()
+            overhead_mib = None
+            if (
+                isinstance(idle_gpu.get("vram_used_mib"), int)
+                and isinstance(resident.get("vram_used_mib"), int)
+            ):
+                overhead_mib = resident["vram_used_mib"] - idle_gpu["vram_used_mib"]
             suite, n = run_model_suite(
                 base, key, mid, run_name, bool(spec.get("vision")), n, total
+            )
+            cold = next((r for r in suite if r.get("label", "").endswith("/cache-cold")), None)
+            warm = next((r for r in suite if r.get("label", "").endswith("/cache-warm")), None)
+            append(
+                {
+                    "label": f"{mid}/overhead-kv-summary",
+                    "model": run_name,
+                    "ok": True,
+                    "catalog_id": mid,
+                    "ollama_tag": run_name,
+                    "disk_pull_gb": disk_pull_gb,
+                    "ollama_list_size_gb": ollama_size_gb(run_name) or ollama_size_gb(tag),
+                    "vram_idle_mib": idle_gpu.get("vram_used_mib"),
+                    "vram_resident_mib": resident.get("vram_used_mib"),
+                    "vram_runtime_overhead_mib": overhead_mib,
+                    "vram_total_mib": resident.get("vram_total_mib"),
+                    "kv_cache_cold": {
+                        "wall_s": (cold or {}).get("wall_s"),
+                        "cached_tokens": (cold or {}).get("cached_tokens"),
+                        "cache_hit_percent": (cold or {}).get("cache_hit_percent"),
+                        "prompt_tokens": (cold or {}).get("prompt_tokens"),
+                    },
+                    "kv_cache_warm": {
+                        "wall_s": (warm or {}).get("wall_s"),
+                        "cached_tokens": (warm or {}).get("cached_tokens"),
+                        "cache_hit_percent": (warm or {}).get("cache_hit_percent"),
+                        "prompt_tokens": (warm or {}).get("prompt_tokens"),
+                    },
+                }
             )
             for row in suite:
                 append(row)
@@ -363,6 +446,7 @@ def main() -> None:
             print(f"=== cleanup after {mid} ===", flush=True)
             try:
                 cleanup_all()
+                idle_gpu = gpu_stats()
             except Exception as exc:  # noqa: BLE001
                 print(f"cleanup warn: {exc}", flush=True)
 

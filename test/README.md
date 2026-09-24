@@ -12,6 +12,9 @@ All offline units and gates live under this folder (merged former `tests/`).
 | `run.sh` | Offline static gate with `running test case N/M`. |
 | `run_all.sh` | Static gate + focused Python units. |
 | `scripts/` | Unit and live contract scripts. |
+| `scripts/opencode_compact_flood.sh` | OpenCode AUTO compact flood (`--continue`). |
+| `scripts/dsh_web_compact_flood.sh` | DSH Standard UI compact flood (bsk). |
+| `scripts/catalog_compact_cycle.py` | Vast pull→DSH+OpenCode compact→cleanup cycle. |
 | `scripts/prompt_length_contract.py` | Live **short** + **long** prompt chat. |
 | `../scripts/perf_matrix.py` | Reasoning-effort / first-token / cache matrix. |
 | `../docs/perf-results/` | Sanitized perf JSONL + comparison tables. |
@@ -19,8 +22,8 @@ All offline units and gates live under this folder (merged former `tests/`).
 
 ## 1. Safety
 
-- Read `docs/CHANGELOG.md`, `docs/HISTORY.md`, and `history/task_on_progress.md`
-  before changing a live VPS.
+- Read `docs/CHANGELOG.md`, `docs/HISTORY.md`, and `history/` before changing
+  a live VPS.
 - Follow `rule/AGENT_RULES.md`. Never commit or print `LLM_STUDIO_API_KEY`.
 - Do not attach Hermes networks, volumes, or the Docker socket.
 

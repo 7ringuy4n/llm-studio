@@ -1,0 +1,18 @@
+{
+  "kind": "opencode-auto-compact-proof",
+  "sessionID": "ses_f2df287a6ffeQKtcCjdrBKlmCD",
+  "model": "ollama/qwen3.5:9b-ctx128k",
+  "test_context_tokens": 131072,
+  "reserved": 32768,
+  "result": "PASS",
+  "evidence": {
+    "compaction_part": {
+      "type": "compaction",
+      "auto": true,
+      "overflow": false
+    },
+    "pre_compact_tokens_approx": 128543,
+    "summary_input_tokens": 116396,
+    "post_compact_tokens_turn48": 18875
+  }
+}

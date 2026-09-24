@@ -7,8 +7,6 @@ See [`rule/AGENT_RULES.md`](../rule/AGENT_RULES.md) for how to write entries.
 Each dated folder should include **Technical detail**: functions, env keys
 (bad → fixed), API fields, and line anchors where useful.
 
-Living handoff: [`task_on_progress.md`](./task_on_progress.md)
-
 Narrative companion: [`docs/HISTORY.md`](../docs/HISTORY.md) · release bullets:
 [`docs/CHANGELOG.md`](../docs/CHANGELOG.md)
 

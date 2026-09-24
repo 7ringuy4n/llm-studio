@@ -1,0 +1,9 @@
+{
+  "kind": "dsh-auto-compact-proof",
+  "catalog_key": "Qwen/Qwen3.5-0.8B",
+  "model": "qwen3.5:0.8b-ctx32k",
+  "test_context_tokens": 32768,
+  "result": "PASS",
+  "compact_detail": "auto_turn=4",
+  "flood_rows": 9
+}

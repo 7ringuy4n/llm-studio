@@ -247,13 +247,15 @@ Gate: `make test-vision` — **PASS 8/8**.
 
 | Model | Ollama tag | Measured VRAM (resident) | Measured HDD (Ollama pull) | Min GPU | Comfortable HDD |
 | --- | --- | --- | --- | --- | --- |
-| Qwen3.5-0.8B | `qwen3.5:0.8b` | ~2.7 GB | **1.0 GB** | 6–8 GB | ≥5 GB free |
-| Qwen3.5-2B | `qwen3.5:2b` | ~4.5 GB | **2.7 GB** | 8 GB | ≥8 GB free |
-| Qwen3-1.7B | `qwen3:1.7b` | ~6.3 GB | **1.4 GB** | 8 GB | ≥5 GB free |
-| Qwen3-8B | `qwen3:8b` | ~11.3 GB | **5.2 GB** | 12 GB | ≥12 GB free |
-| DeepSeek-R1 7B | `deepseek-r1:7b` | ~9.0 GB | **4.7 GB** | 10 GB | ≥12 GB free |
-| Llama 3.1 8B | `llama3.1:8b` | ~13.6 GB | **4.9 GB** | 14 GB | ≥12 GB free |
-| **Qwen3.8 27B** | `qwen3.8:27b` (+ ctx64k) | **~20–22 GB** @ 64k | **~17 GB** (16 GB weights + ~1 GB extras) | **24 GB** | **≥40 GB** container (32 GB fills) |
+| Qwen3.5-0.8B | `qwen3.5:0.8b` | ~2.0 GB | **1.0 GB** | 6–8 GB | ≥5 GB free |
+| Qwen3.5-2B | `qwen3.5:2b` | ~3.7 GB | **2.7 GB** | 8 GB | ≥8 GB free |
+| Qwen3.5-4B | `qwen3.5:4b` | ~5.0 GB | **3.4 GB** | 8–10 GB | ≥8 GB free |
+| Qwen3.5-9B | `qwen3.5:9b` | ~7.5 GB | **6.6 GB** | 10–12 GB | ≥12 GB free |
+| Qwen3-1.7B | `qwen3:1.7b` | ~5.1 GB | **1.4 GB** | 8 GB | ≥5 GB free |
+| Qwen3-8B | `qwen3:8b` | ~9.6 GB | **5.2 GB** | 12 GB | ≥12 GB free |
+| DeepSeek-R1 7B | `deepseek-r1:7b` | ~6.5 GB | **4.7 GB** | 10 GB | ≥12 GB free |
+| Llama 3.1 8B | `llama3.1:8b` | ~8.9 GB | **4.9 GB** | 12 GB | ≥12 GB free |
+| **Qwen3.8 27B** | `qwen3.8:27b` (+ ctx64k) | **~21.8 GB** @ 64k | **~17 GB** | **24 GB** | **≥40 GB** container (32 GB fills) |
 
 **HDD notes (Vast):** one-model-at-a-time cleanup kept peak use ~17 GB weights on a **32 GB** overlay; concurrent pulls or leftover blobs fill the disk. Prefer **≥40 GB** disk when hosting 27B.
 
@@ -298,19 +300,118 @@ Full case table + VRAM: **§9b**.
 
 ### DSH auto-compact
 
-Observed on DSH with this Vast model: when prompt hit **32769 > n_ctx 32768** (before ctx64k fix), UI raised `CONTEXT_WINDOW_EXCEEDED` and **compaction failed** (“could not produce a useful summary”). After switching to **`qwen3.8:27b-ctx64k`** + DSH `contextWindow: 65536`, new sessions should avoid the 32k wall. Compact still depends on DSH summarizer quality under tool+image noise — treat as **partial / unreliable**, not a hard guarantee.
+**Qwen3.5-9B @ 131072 (Vast, 2026-09-24) — AUTO compact PASS (not `/compact`):**
+Standard flood with large payloads; session
+`compaction/start` at **turn=27** with **no `sourceCommandId`** (auto pressure),
+`compaction/summary` + `compaction/end` OK; UI Usage ~84k → **34k** after compact.
+Artifact: `dsh-auto-compact-proof-9b.jsonl` · flood `dsh-web-auto-compact-9b.jsonl`.
+Per-model max ctx (no shared ctx4k suite). Manual `/compact` earlier is **not** scored as PASS.
+
+Prior 27B note: when prompt hit **32769 > n_ctx 32768** (before ctx64k fix), UI raised
+`CONTEXT_WINDOW_EXCEEDED` and compaction failed (“could not produce a useful summary”).
+Use **`qwen3.8:27b-ctx64k`** + DSH `contextWindow: 65536` for 27B DSH auto-flood
+(DSH 27B auto not re-run in small-ctx catalog cycle).
+
+#### Catalog compact cycle (small-ctx ≤40k + prior max-ctx proofs)
+
+Driver: `test/scripts/catalog_compact_cycle.py` · summary
+`docs/perf-results/catalog-compact-cycle.jsonl`.
+
+| Model | lab ctx | DSH AUTO | OpenCode AUTO |
+| --- | ---: | --- | --- |
+| Qwen3.5-0.8B | 32768 | **PASS** (auto_turn=4) | **PASS** |
+| Qwen3.5-2B | 32768 | **PASS** (auto_turn=9) | **PASS** (~23k→15k drops) |
+| Qwen3-1.7B | 32768 | **PASS** (auto_turn=6) | **PASS** |
+| Qwen3.5-4B | 32768 | **PASS** (auto_turn=6) | **PASS** (turn 8, 23k→15k) |
+| Qwen3-8B | 40960 | **PASS** (auto_turn=8) | **PASS** (29125→14660) |
+| Qwen3.5-9B | 131072 | **PASS** (prior) | **PASS** (prior) |
+| Qwen3.8-27B | 65536 | not in small-ctx run | **PASS** (prior) |
+| deepseek-r1:7b / llama3.1:8b | 65536 | skipped (`--max-ctx 40960`) | skipped |
+
+### OpenCode auto-compact (Vast tunnel, 2026-09-24)
+
+Harness: `test/scripts/opencode_compact_flood.sh` · OpenCode **1.18.32** · `compaction.auto=true`.
+Must use `--continue` (same session). PASS = session `type:compaction auto:true`
+and/or token-drop ≥~7k across flood turns.
+
+| Model | ctx / reserved | AUTO | Tokens before → after | Artifact |
+| --- | --- | --- | ---: | --- |
+| Qwen3.5-9B | 131072 / 32768 | **PASS** | ~128543 → **18875** | `opencode-auto-compact-proof-9b.json` |
+| Qwen3.8-27B | 65536 / 16384 | **PASS** | 48268 → **17332** | `opencode-auto-compact-proof-27b.json` |
+| Qwen3.5-0.8B | 32768 / 8192 | **PASS** | ~24k→15k (repeat) | `…-qwen3.5_0.8b-ctx32k.json` |
+| Qwen3.5-2B | 32768 / 8192 | **PASS** | ~23k→15k (×3) | `…-qwen3.5_2b-ctx32k.json` |
+| Qwen3-1.7B | 32768 / 8192 | **PASS** | flood proof | `…-qwen3_1.7b-ctx32k.json` |
+| Qwen3.5-4B | 32768 / 8192 | **PASS** | 23336 → **15370** | `…-qwen3.5_4b-ctx32k.json` |
+| Qwen3-8B | 40960 / 10240 | **PASS** | 29125 → **14660** | `…-qwen3_8b-ctx40k.json` |
+
+**Config gotcha:** OpenCode applies `compaction.reserved` only when model
+`limit.input` is set; with only `limit.context`, reserved is ignored and
+trigger ≈ `context − maxOutputTokens` (near the hard wall — summarizer may starve).
+Flood script now sets `limit.input = ctx`.
+
+### DSH vs OpenCode — auto-compact for cost/quota
+
+| Axis | DSH Standard | OpenCode |
+| --- | --- | --- |
+| Auto proven (this lab) | 0.8B–4B + 9B **PASS** | 0.8B–4B + 9B + 27B **PASS** |
+| Trigger | threshold × `contextWindow` (align with `num_ctx`) | `tokens ≥ limit.input − reserved` (needs `limit.input`) |
+| Headroom rule | Compact **before** hard overflow or summary fails | Same — leave reserved room; near-wall stalls without compact |
+| Cost/quota saving | Strong: earlier cut on 9B (~84k→34k); small models compact by turn ~4–9 | Strong once configured; small models ~23k→15k; 27B cut at ~48k |
+| Efficiency | Faster UI path; well-tuned for coding-agent Standard | Summarizer can be slow on 27B; `--continue` required |
+| **Pick for auto-compact savings** | **DSH** for early quota save (Standard coding agent) | **OpenCode** OK with `limit.input`+reserved; else wastes to wall |
+
+**Verdict:** Both work for auto-compact when context is aligned. For **cost/quota saving**,
+**DSH Standard edges OpenCode** on the measured 9B path (compacts earlier ~84k vs ~116–128k).
+OpenCode matches on small-ctx labs and has **27B auto PASS**; require `limit.input` or you
+silently burn to the wall.
 
 ---
 
 
-### DSH Standard-mode continuous compact flood (homelab)
+### DSH Standard-mode continuous coding-agent max-ctx flood
 
-Rules: `rule/DSH_COMPACT_FLOOD.md` · harness `test/scripts/dsh_web_compact_flood.sh` · Cursor rule `.cursor/rules/dsh-compact-flood.mdc`.  
-Must use **Standard** mode (Minimal has no compaction). Artifact: `docs/perf-results/dsh-web-compact-flood.jsonl`.  
-Detection requires explicit UI phrases (`Context compaction` / compacted conversation), not bare substring `compact`.
+Rules: `rule/DSH_COMPACT_FLOOD.md` · harness `test/scripts/dsh_web_compact_flood.sh`
+· API continuous growth `test/scripts/coding_agent_max_ctx_compact_lab.py`.
 
+Must use **Standard** mode (Minimal has no compaction). Grow **coding-agent**
+turns toward **that model's** max `contextWindow` (catalog `test_context_tokens` /
+`ollama_num_ctx`); after **auto** compact, send continue turns. Outcomes:
+`auto_compact_and_continue` | `overflow_no_compact` | `continue_no_auto_compact`.
+Do **not** score manual `/compact` as PASS for auto-compact labs.
+Artifacts: `dsh-web-auto-compact-*.jsonl`, `dsh-auto-compact-proof-*.jsonl`.
+Detection: session `compaction/start` without `sourceCommandId`, or UI
+`Compacting context` / `Compacted N history items` during grow (no `/compact` sent).
 
-## 8. Hardware recommendation (real)
+### Runtime overhead & KV cache (Vast cycle 2026-09-24)
+
+Host: Vast GPU **32 GB VRAM** · artifact `vast-all-models-cycle.jsonl` (`*/overhead-kv-summary`).
+**Runtime overhead** = resident VRAM after warm − idle (empty GPU ≈ 0).
+**KV:** same-prefix `cache-cold` → `cache-warm` (`cache_hit_percent` / wall).
+
+| Model | HDD pull (GB) | VRAM resident (MiB) | Runtime overhead (MiB) | KV cold % | KV warm % | Cold wall s | Warm wall s |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| Qwen3.5-0.8B | 1.0 | 2057 | 2057 | 0 | **86.2** | 4.6 | 4.5 |
+| Qwen3.5-2B | 2.6 | 3785 | 3785 | 0 | **86.2** | 4.4 | 4.3 |
+| Qwen3.5-4B | 3.2 | 5107 | 5107 | 0 | **86.2** | 4.9 | 4.6 |
+| Qwen3.5-9B | 6.1 | 7659 | 7659 | 0 | **86.2** | 4.8 | 4.8 |
+| Qwen3-1.7B | 1.3 | 5227 | 5227 | 3.5 | **96.6** | 4.6 | 4.1 |
+| Qwen3-8B | 4.9 | 9867 | 9867 | — | **96.6** | — | — |
+| DeepSeek-R1 7B | 4.4 | 6649 | 6649 | — | **94.1** | — | — |
+| Llama 3.1 8B | 4.6 | 9139 | 9139 | — | **96.6** | — | — |
+| Qwen3.8 27B | 16.5 | 22277 | 22277 | — | **86.2** | — | — |
+
+Cycle result: **86/86 OK** across 9 catalog models (pull → suite → cleanup).
+
+### Coding-agent continuous max-ctx (API)
+
+Harness: `test/scripts/coding_agent_max_ctx_compact_lab.py` · artifact
+`coding-agent-max-ctx-compact.jsonl`.
+
+| Model | Cap (tokens) | Turns | Last prompt tok | Outcome | Continue near max? | DSH UI compact |
+| --- | ---: | ---: | ---: | --- | --- | --- |
+| Qwen3.5-4B | 8192 | 5 | 8583 (~112% of cap) | `hit_cap_continue_ok` | **Yes** | not observable on API — use DSH Standard flood |
+
+Note: Ollama accepted prompts past the lab cap without hard reject; session kept answering. Auto-compact is a **DSH Standard** behavior — run `dsh_web_compact_flood.sh` with browser connected for UI compact proof.
 
 Two deployment lanes: **CPU VPS** (llm-studio, one resident model) and **Vast GPU**
 (Ollama OpenAI `/v1`, DSH second provider via SSH local-forward — do not commit
@@ -320,13 +421,15 @@ public host:port). Pick per model below.
 
 | Model | CPU RAM | Vast VRAM (measured) | HDD weights (measured Ollama pull) | CPU VPS HDD (HF/GGUF cache, approx) |
 | --- | --- | --- | --- | --- |
-| Qwen3.5-0.8B | 4c / **16 GiB** host | **~2.7 GB** | **1.0 GB** | ~2–4 GB HF |
-| Qwen3.5-2B | 4c / **16 GiB** | **~4.5 GB** | **2.7 GB** | ~4–6 GB HF |
-| Qwen3-1.7B | 4c / **12–16 GiB** | **~6.3 GB** | **1.4 GB** | ~3–5 GB HF |
-| Qwen3-8B Q4 | 4c / **16+ GiB** | **~11.3 GB** | **5.2 GB** | ~5 GB GGUF |
-| DeepSeek-R1 7B Q4 | 4c / **16+ GiB** | **~9.0 GB** | **4.7 GB** | ~4.5–5 GB GGUF |
-| Llama 3.1 8B Q4 | 4c / **16+ GiB** | **~13.6 GB** | **4.9 GB** | ~4.5–5 GB GGUF |
-| **Qwen3.8 27B Q4** | **not on 16 GiB CPU** | **~20–22 GB** @ 64k | **~17 GB** | n/a (Vast only) |
+| Qwen3.5-0.8B | 4c / **16 GiB** host | **~2.0 GB** | **1.0 GB** | ~2–4 GB HF |
+| Qwen3.5-2B | 4c / **16 GiB** | **~3.7 GB** | **2.7 GB** | ~4–6 GB HF |
+| Qwen3.5-4B | 4c / **16 GiB** | **~5.0 GB** | **3.4 GB** | ~6–8 GB HF |
+| Qwen3.5-9B | 4c / **16+ GiB** | **~7.5 GB** | **6.6 GB** | ~10–14 GB HF |
+| Qwen3-1.7B | 4c / **12–16 GiB** | **~5.1 GB** | **1.4 GB** | ~3–5 GB HF |
+| Qwen3-8B Q4 | 4c / **16+ GiB** | **~9.6 GB** | **5.2 GB** | ~5 GB GGUF |
+| DeepSeek-R1 7B Q4 | 4c / **16+ GiB** | **~6.5 GB** | **4.7 GB** | ~4.5–5 GB GGUF |
+| Llama 3.1 8B Q4 | 4c / **16+ GiB** | **~8.9 GB** | **4.9 GB** | ~4.5–5 GB GGUF |
+| **Qwen3.8 27B Q4** | **not on 16 GiB CPU** | **~21.8 GB** @ 64k | **~17 GB** | n/a (Vast only) |
 
 | Lane | Min HDD | Comfortable HDD |
 | --- | --- | --- |
@@ -341,6 +444,8 @@ Gate: Vast cycle `…/coding` — exact reply `return a + b` (`max_tokens=32`, t
 | --- | --- | --- |
 | Qwen3.5-0.8B | **FAIL** (empty / `length`) | **Not recommended** — chat/vision only; too small for coding agents |
 | Qwen3.5-2B | **FAIL** (empty / `length`) | **Not recommended** — chat/vision only; not a coding agent |
+| Qwen3.5-4B | **FAIL** @ 32 out | **Not recommended** as coding agent — multimodal mid-size; use for vision/chat. Continuous max-ctx **continue OK** (API) |
+| Qwen3.5-9B | **FAIL** @ 32 out | **Conditional** — stronger multimodal; not primary coding agent |
 | Qwen3-1.7B | **FAIL** (empty / `length`) | **Not recommended** — text smoke / short chat only |
 | Qwen3-8B Q4 | **FAIL** @ 32 out (thinking) | **Conditional** — OK for snippets if reasoning **off** and higher `max_tokens`; not the primary coding pick on CPU |
 | DeepSeek-R1 7B Q4 | **FAIL** @ 32 out (thinking) | **Conditional** — better for hard reasoning-style coding with a **large** token budget; avoid for exact one-line replies |
@@ -386,4 +491,6 @@ Full dual-lane case + VRAM/HDD tables: §9 (CPU) + §9b (Vast).
 | *(manual VPS full)* | `test/scripts/full_model_statistic_lab.py` |
 | *(manual ctx ladder)* | `test/scripts/context_max_ladder_lab.py` |
 | *(manual coding)* | `test/scripts/coding_sim_lab.py` |
+| *(coding-agent max-ctx)* | `test/scripts/coding_agent_max_ctx_compact_lab.py` |
 | *(manual DSH web)* | `test/scripts/dsh_web_full_matrix.py` |
+| *(DSH compact/continue)* | `test/scripts/dsh_web_compact_flood.sh` |

@@ -1,19 +1,20 @@
 ---
-description: DSH web Standard-mode continuous compact flood test rules (homelab/bsk)
-globs: test/scripts/dsh_web_compact_flood.sh,rule/DSH_COMPACT_FLOOD.md,docs/perf-results/dsh-web-compact-flood.jsonl
+description: DSH web Standard-mode coding-agent max-ctx compact/continue flood (homelab/bsk)
+globs: test/scripts/dsh_web_compact_flood.sh,test/scripts/coding_agent_max_ctx_compact_lab.py,rule/DSH_COMPACT_FLOOD.md,docs/perf-results/dsh-web-compact-flood.jsonl,docs/perf-results/coding-agent-max-ctx-compact.jsonl
 alwaysApply: false
 ---
 
-# DSH Standard-mode compact flood
+# DSH coding-agent max-ctx compact / continue
 
-When lab-temp or the user asks to verify DSH auto-compact:
+When lab-temp or the user asks to verify DSH auto-compact or long coding sessions:
 
-1. Use **BrowserSkill (`bsk`)**, not DSH headless.
+1. Use **BrowserSkill (`bsk`)**, not DSH headless, for UI compact signals.
 2. Mode must be **Standard** (Minimal has no compaction).
-3. Prefer **homelab** `Qwen/Qwen3.5-0.8B` so Vast catalog cycles keep the GPU.
-4. Run `test/scripts/dsh_web_compact_flood.sh` with `running test case N/M`.
-5. Keep each paste ≤ ~3500 chars; accumulate via many turns.
-6. Record JSONL under `docs/perf-results/dsh-web-compact-flood.jsonl`.
-7. Score: compact UI = pass; overflow without compact = fail/partial; never publish Vast public host:port.
+3. Prefer **coding-agent** turns that grow toward max `contextWindow`.
+4. After compact, send **continue** turns (`DSH_COMPACT_CONTINUE_AFTER`) to prove session still usable.
+5. Run `test/scripts/dsh_web_compact_flood.sh` with `running test case N/M`.
+6. For API-only continuous growth (no UI compact): `coding_agent_max_ctx_compact_lab.py`.
+7. Keep each bsk paste ≤ ~3500 chars; accumulate via many turns.
+8. Record JSONL under `docs/perf-results/`; never publish Vast public host:port.
 
 Full rules: `rule/DSH_COMPACT_FLOOD.md`.

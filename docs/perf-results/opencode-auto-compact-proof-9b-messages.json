@@ -1,0 +1,49 @@
+{
+  "sessionID": "ses_f2df287a6ffeQKtcCjdrBKlmCD",
+  "compaction_messages": [
+    {
+      "index": 96,
+      "info": {
+        "role": "user",
+        "mode": null,
+        "agent": "build",
+        "summary": {
+          "diffs": []
+        },
+        "tokens": null,
+        "finish": null,
+        "modelID": null
+      },
+      "parts": [
+        {
+          "type": "compaction",
+          "auto": true,
+          "overflow": false,
+          "id": "prt_0d21628e5001prMY17lbjuWk29"
+        }
+      ]
+    },
+    {
+      "index": 97,
+      "info": {
+        "role": "assistant",
+        "mode": "compaction",
+        "agent": "compaction",
+        "summary": true,
+        "tokens": {
+          "total": 116652,
+          "input": 116396,
+          "output": 256,
+          "reasoning": 0,
+          "cache": {
+            "write": 0,
+            "read": 0
+          }
+        },
+        "finish": "length",
+        "modelID": "qwen3.5:9b-ctx128k"
+      },
+      "parts": []
+    }
+  ]
+}
