@@ -11,6 +11,7 @@ export PYTHONPATH="${PROJECT_ROOT}${PYTHONPATH:+:${PYTHONPATH}}"
 
 UNITS=(
   "test/scripts/gguf_runtime_unit.py|gguf_runtime_unit"
+  "test/scripts/accelerator_unit.py|accelerator_unit"
   "test/scripts/model_management_unit.py|model_management_unit"
   "test/scripts/tool_calling_unit.py|tool_calling_unit"
   "test/scripts/tracing_unit.py|tracing_unit"
@@ -23,6 +24,11 @@ failed=0
 
 _run_unit() {
   local path="$1"
+  # Settings-only units can run without torch/fastapi on the host.
+  if [[ "${path}" == *accelerator_unit.py ]]; then
+    python3 "${path}"
+    return
+  fi
   if python3 -c 'import fastapi, torch' >/dev/null 2>&1; then
     python3 "${path}"
     return

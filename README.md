@@ -1,15 +1,17 @@
 # Private Multi-model LLM Studio API Setup
 
-This repository contains the setup layer for a CPU-only Qwen3.5 multimodal learning lab on
-an Ubuntu VPS. It exposes a small OpenAI-compatible REST surface while remaining
-isolated from an existing Hermes installation.
+This repository contains the setup layer for a Qwen3.5 multimodal learning lab on
+an Ubuntu VPS. It supports a **CPU-only** lane and a **local NVIDIA (VGA)** lane
+(`LLM_STUDIO_ACCELERATOR=auto|cpu|cuda`). It exposes a small OpenAI-compatible
+REST surface while remaining isolated from an existing Hermes installation.
 
 For the hands-on learning sequence, start with the
 [AI Model Training Handbook](docs/README.md). Project release notes live in
 [docs/CHANGELOG.md](docs/CHANGELOG.md) and [docs/HISTORY.md](docs/HISTORY.md);
 verification is indexed under [test/README.md](test/README.md) and
 [test/REPORT.md](test/REPORT.md). Agent rules: [rule/AGENT_RULES.md](rule/AGENT_RULES.md).
-Root-cause history: [history/README.md](history/README.md).
+Root-cause history: [history/README.md](history/README.md). Hardware lanes:
+[docs/HARDWARE.md](docs/HARDWARE.md).
 
 The configured upstream model identifier is
 [`Qwen/Qwen3.5-0.8B`](https://huggingface.co/Qwen/Qwen3.5-0.8B), as published by
@@ -75,6 +77,11 @@ Run the idempotent setup on the target VPS:
 ```bash
 sudo make setup
 ```
+
+Setup resolves `LLM_STUDIO_ACCELERATOR` (`auto` by default): **cpu** on hosts
+without a usable NVIDIA Docker runtime, **cuda** when `nvidia-smi` and the
+NVIDIA Container Toolkit are available. Force a lane with
+`LLM_STUDIO_ACCELERATOR=cpu` or `=cuda`. Details: [docs/HARDWARE.md](docs/HARDWARE.md).
 
 The default data root is `/opt/data/llm-studio`. Setup creates only this subtree,
 builds only `llm-studio-api:local`, starts only the `llm-studio` Compose project, and

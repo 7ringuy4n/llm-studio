@@ -289,6 +289,11 @@ class ModelRuntime:
                 )
                 n_batch = settings.model_gguf_n_batch
                 n_ubatch = min(settings.model_gguf_n_ubatch, n_batch)
+                n_gpu_layers = (
+                    settings.model_gguf_n_gpu_layers
+                    if settings.accelerator == "cuda"
+                    else 0
+                )
                 self._model = Llama(
                     model_path=model_path,
                     n_ctx=min(spec.context_tokens, settings.model_gguf_context_tokens),
@@ -296,7 +301,7 @@ class ModelRuntime:
                     n_threads_batch=settings.cpu_threads,
                     n_batch=n_batch,
                     n_ubatch=n_ubatch,
-                    n_gpu_layers=0,
+                    n_gpu_layers=n_gpu_layers,
                     use_mmap=settings.model_gguf_use_mmap,
                     use_mlock=settings.model_gguf_use_mlock,
                     flash_attn=False,
@@ -343,6 +348,13 @@ class ModelRuntime:
                     "dtype": dtype,
                     "low_cpu_mem_usage": True,
                 }
+                if settings.accelerator == "cuda":
+                    if not torch.cuda.is_available():
+                        raise RuntimeError(
+                            "LLM_STUDIO_ACCELERATOR=cuda but torch.cuda.is_available() "
+                            "is False; rebuild with Dockerfile.cuda and NVIDIA runtime"
+                        )
+                    model_common["device_map"] = "auto"
                 if spec.backend == "multimodal":
                     self._processor = AutoProcessor.from_pretrained(spec.id, **common)
                     self._tokenizer = self._processor.tokenizer
@@ -367,6 +379,7 @@ class ModelRuntime:
                 resident_seconds=0.0,
                 reason=reason,
                 backend=spec.backend,
+                accelerator=settings.accelerator,
             )
             return spec
 

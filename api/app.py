@@ -128,10 +128,20 @@ async def validation_error(request: Request, exc: RequestValidationError):
 
 @app.get("/health")
 async def health() -> dict[str, object]:
+    cuda_available = False
+    if settings.accelerator == "cuda":
+        try:
+            import torch
+
+            cuda_available = bool(torch.cuda.is_available())
+        except Exception:
+            cuda_available = False
     return {
         "status": "ok",
         "model_loaded": runtime.loaded,
         "loaded_model": runtime.loaded_model_id,
+        "accelerator": settings.accelerator,
+        "cuda_available": cuda_available,
     }
 
 

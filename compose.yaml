@@ -4,16 +4,17 @@ services:
   api:
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: "${LLM_STUDIO_DOCKERFILE:-Dockerfile}"
       args:
         APP_GID: "${LLM_STUDIO_APP_GID:-10001}"
         APP_UID: "${LLM_STUDIO_APP_UID:-10001}"
-    image: llm-studio-api:local
+    image: "${LLM_STUDIO_API_IMAGE:-llm-studio-api:local}"
     container_name: llm-studio-api
     restart: unless-stopped
     init: true
     environment:
       LLM_STUDIO_API_KEY: "${LLM_STUDIO_API_KEY:?LLM_STUDIO_API_KEY is required}"
+      LLM_STUDIO_ACCELERATOR: "${LLM_STUDIO_ACCELERATOR:-cpu}"
       LLM_STUDIO_CPU_THREADS: "${LLM_STUDIO_CPU_THREADS:-3}"
       OMP_NUM_THREADS: "${LLM_STUDIO_CPU_THREADS:-3}"
       MKL_NUM_THREADS: "${LLM_STUDIO_CPU_THREADS:-3}"
@@ -34,6 +35,7 @@ services:
       MODEL_KV_CACHE_BYTES: "${MODEL_KV_CACHE_BYTES:-2147483648}"
       MODEL_GGUF_N_BATCH: "${MODEL_GGUF_N_BATCH:-512}"
       MODEL_GGUF_N_UBATCH: "${MODEL_GGUF_N_UBATCH:-512}"
+      MODEL_GGUF_N_GPU_LAYERS: "${MODEL_GGUF_N_GPU_LAYERS:--1}"
       MODEL_GGUF_USE_MMAP: "${MODEL_GGUF_USE_MMAP:-true}"
       MODEL_GGUF_USE_MLOCK: "${MODEL_GGUF_USE_MLOCK:-false}"
       MODEL_LOAD_ON_START: "${MODEL_LOAD_ON_START:-false}"

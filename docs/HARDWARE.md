@@ -1,8 +1,32 @@
 # Hardware requirements (llm-studio)
 
-Sizing for the **VPN inference API** on a CPU-only Ubuntu host, plus **GPU
+Sizing for the **VPN inference API** on a CPU-only Ubuntu host, optional
+**local NVIDIA (VGA)** acceleration via `LLM_STUDIO_ACCELERATOR`, plus **GPU
 offload** for large catalog entries (`deployment: vast-ollama`). Companion to
 Hermes-style `docs/HARDWARE.md`, scoped to this stack only.
+
+## Accelerator lanes (setup)
+
+| Lane | When | Image / Compose | Runtime |
+|------|------|-----------------|---------|
+| **cpu** (default on non-VGA) | No NVIDIA GPU, or force `LLM_STUDIO_ACCELERATOR=cpu` | `Dockerfile` → `llm-studio-api:local` | GGUF `n_gpu_layers=0`; HF on CPU |
+| **cuda** (local VGA) | `nvidia-smi` OK + NVIDIA Container Toolkit, or force `cuda` | `Dockerfile.cuda` → `llm-studio-api:local-cuda` + `compose.gpu.yaml` | GGUF layers on GPU; HF `device_map=auto` |
+| **auto** (setup only) | Default request; resolved to `cpu` or `cuda` before `.env` write | same as resolved lane | API rejects literal `auto` |
+
+```bash
+# Force CPU (VPS without VGA)
+sudo LLM_STUDIO_ACCELERATOR=cpu make setup
+
+# Force local NVIDIA (fails if toolkit/GPU missing)
+sudo LLM_STUDIO_ACCELERATOR=cuda make setup
+
+# Auto-detect (default)
+sudo make setup
+```
+
+Host packages for the CUDA lane: NVIDIA driver +
+[NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html).
+`scripts/inspect_environment.sh` records `nvidia-smi` and Docker runtime markers.
 
 ## Tested lab (successful multi-model + OpenObserve)
 

@@ -42,9 +42,21 @@ def _choice(name: str, default: str, choices: set[str]) -> str:
     return value
 
 
+def _int_allow_negative(name: str, default: int, *, minimum: int, maximum: int) -> int:
+    raw = os.getenv(name, str(default))
+    try:
+        value = int(raw)
+    except ValueError as exc:
+        raise RuntimeError(f"{name} must be an integer") from exc
+    if value < minimum or value > maximum:
+        raise RuntimeError(f"{name} must be >= {minimum} and <= {maximum}")
+    return value
+
+
 @dataclass(frozen=True)
 class Settings:
     api_key: str
+    accelerator: str
     model_id: str
     model_backend: str
     model_dtype: str
@@ -54,6 +66,7 @@ class Settings:
     model_kv_cache_bytes: int
     model_gguf_n_batch: int
     model_gguf_n_ubatch: int
+    model_gguf_n_gpu_layers: int
     model_gguf_use_mmap: bool
     model_gguf_use_mlock: bool
     model_revision: str
@@ -79,9 +92,12 @@ class Settings:
         model_context_tokens = _positive_int(
             "MODEL_CONTEXT_TOKENS", 262_144, maximum=1_048_576
         )
+        # Setup resolves auto→cpu|cuda into .env; the API only accepts cpu|cuda.
+        accelerator = _choice("LLM_STUDIO_ACCELERATOR", "cpu", {"cpu", "cuda"})
 
         return cls(
             api_key=api_key,
+            accelerator=accelerator,
             model_id=os.getenv("MODEL_ID", "Qwen/Qwen3.5-0.8B"),
             model_backend=_choice(
                 "MODEL_BACKEND", "multimodal", {"causal-lm", "gguf", "multimodal"}
@@ -105,6 +121,10 @@ class Settings:
             # Larger n_batch speeds prompt eval on CPU; keep ubatch <= batch.
             model_gguf_n_batch=_positive_int("MODEL_GGUF_N_BATCH", 512, maximum=4096),
             model_gguf_n_ubatch=_positive_int("MODEL_GGUF_N_UBATCH", 512, maximum=4096),
+            # -1 = all layers on GPU when accelerator=cuda; ignored on cpu.
+            model_gguf_n_gpu_layers=_int_allow_negative(
+                "MODEL_GGUF_N_GPU_LAYERS", -1, minimum=-1, maximum=10_000
+            ),
             model_gguf_use_mmap=_boolean("MODEL_GGUF_USE_MMAP", True),
             # mlock can reduce page-fault stalls but competes for RAM on 16 GiB.
             model_gguf_use_mlock=_boolean("MODEL_GGUF_USE_MLOCK", False),

@@ -5,6 +5,7 @@ set -Eeuo pipefail
 readonly SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
 readonly PROJECT_ROOT="$(cd -- "${SCRIPT_DIR}/.." && pwd -P)"
 readonly COMPOSE_FILE="${PROJECT_ROOT}/compose.yaml"
+readonly COMPOSE_GPU_FILE="${PROJECT_ROOT}/compose.gpu.yaml"
 readonly ENV_FILE="${PROJECT_ROOT}/.env"
 readonly COMPOSE_PROJECT="llm-studio"
 
@@ -31,11 +32,58 @@ env_value() {
   printf '%s' "${value:-${fallback}}"
 }
 
+host_has_nvidia_gpu() {
+  command -v nvidia-smi >/dev/null 2>&1 || return 1
+  nvidia-smi >/dev/null 2>&1
+}
+
+docker_nvidia_runtime_ready() {
+  docker info 2>/dev/null | grep -Eqi 'Runtimes:.*nvidia|nvidia\.com/gpu' \
+    || docker info --format '{{json .Runtimes}}' 2>/dev/null | grep -qi nvidia
+}
+
+# Resolve auto|cpu|cuda → cpu|cuda for .env / Compose. Prints the resolved value.
+resolve_accelerator() {
+  local requested="${1:-auto}"
+  case "${requested}" in
+    cpu)
+      printf 'cpu'
+      return 0
+      ;;
+    cuda)
+      host_has_nvidia_gpu || die 'LLM_STUDIO_ACCELERATOR=cuda but nvidia-smi failed'
+      docker_nvidia_runtime_ready \
+        || die 'LLM_STUDIO_ACCELERATOR=cuda but Docker NVIDIA runtime is missing (install nvidia-container-toolkit)'
+      printf 'cuda'
+      return 0
+      ;;
+    auto)
+      if host_has_nvidia_gpu && docker_nvidia_runtime_ready; then
+        printf 'cuda'
+      else
+        if host_has_nvidia_gpu; then
+          log 'WARNING: NVIDIA GPU detected but Docker cannot use it; falling back to cpu (install nvidia-container-toolkit)'
+        fi
+        printf 'cpu'
+      fi
+      return 0
+      ;;
+    *)
+      die 'LLM_STUDIO_ACCELERATOR must be auto, cpu, or cuda'
+      ;;
+  esac
+}
+
 compose() {
-  local traefik_mode observability_enabled
+  local traefik_mode observability_enabled accelerator
   traefik_mode="$(env_value LLM_STUDIO_TRAEFIK_MODE local)"
   observability_enabled="$(env_value LLM_STUDIO_OBSERVABILITY_ENABLED false)"
-  local -a command=(docker compose --project-name "${COMPOSE_PROJECT}" --env-file "${ENV_FILE}" --file "${COMPOSE_FILE}" --profile "${traefik_mode}")
+  accelerator="$(env_value LLM_STUDIO_ACCELERATOR cpu)"
+  local -a command=(docker compose --project-name "${COMPOSE_PROJECT}" --env-file "${ENV_FILE}" --file "${COMPOSE_FILE}")
+  if [[ "${accelerator}" == cuda ]]; then
+    command+=(--file "${COMPOSE_GPU_FILE}")
+  fi
+  command+=(--profile "${traefik_mode}")
   if [[ "${observability_enabled}" == true ]]; then
     command+=(--profile observability)
   fi

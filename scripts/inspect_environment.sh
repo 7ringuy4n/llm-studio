@@ -45,6 +45,8 @@ capture 'Filesystems' df -h
 capture 'Block devices' lsblk
 capture 'Docker version' docker version
 capture 'Docker Compose version' docker compose version
+capture 'NVIDIA GPU (nvidia-smi)' nvidia-smi
+capture_shell 'Docker NVIDIA runtime' 'docker info --format "{{json .Runtimes}}" 2>/dev/null; docker info 2>/dev/null | grep -i nvidia || printf "no nvidia runtime markers\n"'
 capture 'Docker containers' docker ps --no-trunc --format 'table {{.ID}}\t{{.Names}}\t{{.Image}}\t{{.Status}}\t{{.Ports}}'
 capture 'Docker networks' docker network ls
 capture 'Docker volumes' docker volume ls

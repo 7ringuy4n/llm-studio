@@ -1,0 +1,9 @@
+# Overlay applied by scripts/common.sh when LLM_STUDIO_ACCELERATOR=cuda.
+services:
+  api:
+    gpus: all
+    environment:
+      NVIDIA_VISIBLE_DEVICES: all
+      NVIDIA_DRIVER_CAPABILITIES: compute,utility
+      LLM_STUDIO_ACCELERATOR: cuda
+      MODEL_GGUF_N_GPU_LAYERS: "${MODEL_GGUF_N_GPU_LAYERS:--1}"

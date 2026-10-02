@@ -1,0 +1,46 @@
+# NVIDIA CUDA image for local VGA hosts. CPU VPS must keep using Dockerfile.
+FROM nvidia/cuda:12.4.1-devel-ubuntu22.04
+
+ARG APP_UID=10001
+ARG APP_GID=10001
+ARG DEBIAN_FRONTEND=noninteractive
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1 \
+    TOKENIZERS_PARALLELISM=false \
+    CMAKE_ARGS="-DGGML_CUDA=on" \
+    FORCE_CMAKE=1
+
+RUN apt-get update \
+    && apt-get install --yes --no-install-recommends \
+        python3.11 \
+        python3.11-dev \
+        python3.11-venv \
+        python3-pip \
+        build-essential \
+        cmake \
+        git \
+        libgomp1 \
+    && ln -sf /usr/bin/python3.11 /usr/local/bin/python \
+    && ln -sf /usr/bin/python3.11 /usr/local/bin/python3 \
+    && python -m pip install --upgrade pip \
+    && groupadd --gid "${APP_GID}" llm-studio \
+    && useradd --uid "${APP_UID}" --gid "${APP_GID}" --no-create-home --shell /usr/sbin/nologin llm-studio \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+COPY requirements-cuda.txt /app/requirements-cuda.txt
+RUN python -m pip install --requirement /app/requirements-cuda.txt \
+    && apt-get purge --yes --auto-remove build-essential cmake python3.11-dev git \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY --chown=${APP_UID}:${APP_GID} api /app/api
+COPY --chown=${APP_UID}:${APP_GID} configs /app/configs
+
+USER ${APP_UID}:${APP_GID}
+
+EXPOSE 8000
+
+CMD ["python", "-m", "uvicorn", "api.app:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "1", "--no-access-log", "--timeout-keep-alive", "5", "--limit-concurrency", "16", "--h11-max-incomplete-event-size", "65536", "--proxy-headers", "--forwarded-allow-ips", ""]

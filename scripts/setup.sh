@@ -73,6 +73,22 @@ observability_enabled="${LLM_STUDIO_OBSERVABILITY_ENABLED:-$(env_value LLM_STUDI
 observability_bind="${LLM_STUDIO_OBSERVABILITY_BIND_ADDRESS:-$(env_value LLM_STUDIO_OBSERVABILITY_BIND_ADDRESS 127.0.0.1)}"
 observability_port="${LLM_STUDIO_OBSERVABILITY_PORT:-$(env_value LLM_STUDIO_OBSERVABILITY_PORT 15080)}"
 observability_retention="${LLM_STUDIO_OBSERVABILITY_RETENTION_DAYS:-$(env_value LLM_STUDIO_OBSERVABILITY_RETENTION_DAYS 30)}"
+accelerator_request="${LLM_STUDIO_ACCELERATOR:-$(env_value LLM_STUDIO_ACCELERATOR auto)}"
+# Legacy .env may still say auto; resolve again so Compose/API only see cpu|cuda.
+if [[ "${accelerator_request}" == auto ]]; then
+  :
+elif [[ "${accelerator_request}" != cpu && "${accelerator_request}" != cuda ]]; then
+  die 'LLM_STUDIO_ACCELERATOR must be auto, cpu, or cuda'
+fi
+accelerator="$(resolve_accelerator "${accelerator_request}")"
+if [[ "${accelerator}" == cuda ]]; then
+  dockerfile="Dockerfile.cuda"
+  api_image="llm-studio-api:local-cuda"
+else
+  dockerfile="Dockerfile"
+  api_image="llm-studio-api:local"
+fi
+log "Accelerator lane: ${accelerator} (request=${accelerator_request}, image=${api_image})"
 
 [[ "${traefik_mode}" == local || "${traefik_mode}" == internet ]] \
   || die 'LLM_STUDIO_TRAEFIK_MODE must be local or internet'
@@ -192,6 +208,9 @@ trap 'rm -f -- "${env_tmp:-}"' EXIT
   printf 'LLM_STUDIO_API_KEY=%s\n' "${api_key}"
   printf 'LLM_STUDIO_APP_UID=%s\n' "${app_uid}"
   printf 'LLM_STUDIO_APP_GID=%s\n' "${app_gid}"
+  printf 'LLM_STUDIO_ACCELERATOR=%s\n' "${accelerator}"
+  printf 'LLM_STUDIO_DOCKERFILE=%s\n' "${dockerfile}"
+  printf 'LLM_STUDIO_API_IMAGE=%s\n' "${api_image}"
   printf 'MODEL_ID=%s\n' "$(env_value MODEL_ID Qwen/Qwen3.5-0.8B)"
   printf 'MODEL_BACKEND=%s\n' "$(env_value MODEL_BACKEND multimodal)"
   printf 'MODEL_DTYPE=%s\n' "$(env_value MODEL_DTYPE auto)"
@@ -203,6 +222,7 @@ trap 'rm -f -- "${env_tmp:-}"' EXIT
   printf 'MODEL_KV_CACHE_BYTES=%s\n' "$(env_value MODEL_KV_CACHE_BYTES 2147483648)"
   printf 'MODEL_GGUF_N_BATCH=%s\n' "$(env_value MODEL_GGUF_N_BATCH 512)"
   printf 'MODEL_GGUF_N_UBATCH=%s\n' "$(env_value MODEL_GGUF_N_UBATCH 512)"
+  printf 'MODEL_GGUF_N_GPU_LAYERS=%s\n' "$(env_value MODEL_GGUF_N_GPU_LAYERS -1)"
   printf 'MODEL_GGUF_USE_MMAP=%s\n' "$(env_value MODEL_GGUF_USE_MMAP true)"
   printf 'MODEL_GGUF_USE_MLOCK=%s\n' "$(env_value MODEL_GGUF_USE_MLOCK false)"
   printf 'MODEL_CONTEXT_TOKENS=%s\n' "$(env_value MODEL_CONTEXT_TOKENS 262144)"
@@ -284,6 +304,7 @@ done
 
 log 'Setup complete.'
 printf 'Mode: %s\n' "${traefik_mode}"
+printf 'Accelerator: %s\n' "${accelerator}"
 printf 'Base URL: %s/v1\n' "${service_url}"
 printf 'API key: stored in %s (mode 0600; value not printed)\n' "${ENV_FILE}"
 printf 'Model: %s (downloaded lazily on the first chat request)\n' "$(env_value MODEL_ID Qwen/Qwen3.5-0.8B)"

@@ -8,6 +8,11 @@ _ROOT = Path(__file__).resolve().parents[2]
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
+import os
+
+os.environ.setdefault("LLM_STUDIO_API_KEY", "0123456789abcdef0123456789abcdef")
+os.environ.setdefault("LLM_STUDIO_ACCELERATOR", "cpu")
+
 import types
 from unittest.mock import patch
 
@@ -69,6 +74,7 @@ def main() -> None:
         assert isinstance(runtime._model, FakeLlama)
         assert runtime._model.kwargs.get("n_batch") == 512
         assert runtime._model.kwargs.get("n_ubatch") == 512
+        assert runtime._model.kwargs.get("n_gpu_layers") == 0
         assert runtime._model.kwargs.get("use_mmap") is True
         assert runtime._model.cache is not None
         result = runtime.generate(

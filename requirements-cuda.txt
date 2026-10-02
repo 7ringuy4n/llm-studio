@@ -1,0 +1,13 @@
+--extra-index-url https://download.pytorch.org/whl/cu124
+accelerate==1.15.0
+fastapi==0.116.1
+httpx==0.28.1
+pillow==11.3.0
+# Built with GGML_CUDA in Dockerfile.cuda (not the CPU wheel).
+# Keep the version pin aligned with requirements.txt.
+llama-cpp-python==0.3.35
+pydantic==2.11.7
+torch==2.7.1+cu124
+torchvision==0.22.1+cu124
+transformers==5.17.0
+uvicorn==0.35.0

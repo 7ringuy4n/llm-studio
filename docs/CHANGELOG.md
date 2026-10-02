@@ -1,3 +1,13 @@
+## 2026-10-02 — Local NVIDIA accelerator lane (cpu|cuda|auto)
+
+- `LLM_STUDIO_ACCELERATOR=auto|cpu|cuda`: setup resolves `auto` from `nvidia-smi`
+  + Docker NVIDIA runtime; writes `cpu` or `cuda` into `.env`.
+- CPU lane unchanged (`Dockerfile`, `torch+cpu`, `n_gpu_layers=0`).
+- CUDA lane: `Dockerfile.cuda`, `requirements-cuda.txt`, `compose.gpu.yaml`
+  (`gpus: all`), HF `device_map=auto`, GGUF `MODEL_GGUF_N_GPU_LAYERS` (default `-1`).
+- `/health` reports `accelerator` and `cuda_available`.
+- Vast `deployment: vast-ollama` remains a separate remote option.
+
 ## 2026-09-24 — OpenCode + DSH catalog auto-compact proofs
 
 - OpenCode auto-compact flood (`test/scripts/opencode_compact_flood.sh`) with

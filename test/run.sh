@@ -5,7 +5,7 @@ set -Eeuo pipefail
 
 readonly TEST_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
 readonly PROJECT_ROOT="$(cd -- "${TEST_DIR}/.." && pwd -P)"
-readonly CASE_TOTAL=56
+readonly CASE_TOTAL=63
 
 cd "${PROJECT_ROOT}"
 
@@ -125,6 +125,18 @@ _progress "grep LLM_STUDIO_API_CPUS=3.0"
 grep -Fq 'LLM_STUDIO_API_CPUS=3.0' .env.example
 _progress "grep LLM_STUDIO_CPU_THREADS=3"
 grep -Fq 'LLM_STUDIO_CPU_THREADS=3' .env.example
+_progress "grep LLM_STUDIO_ACCELERATOR=auto"
+grep -Fq 'LLM_STUDIO_ACCELERATOR=auto' .env.example
+_progress "grep Dockerfile.cuda"
+grep -Fq 'Dockerfile.cuda' scripts/setup.sh
+_progress "grep compose.gpu.yaml"
+grep -Fq 'compose.gpu.yaml' scripts/common.sh
+_progress "grep resolve_accelerator"
+grep -Fq 'resolve_accelerator' scripts/common.sh
+_progress "grep MODEL_GGUF_N_GPU_LAYERS"
+grep -Fq 'MODEL_GGUF_N_GPU_LAYERS' compose.yaml .env.example api/settings.py
+_progress "grep gpus: all"
+grep -Fq 'gpus: all' compose.gpu.yaml
 
 _progress "no application rate limiter"
 if rg -n 'SlidingWindowRateLimiter|rate_limiter|RATE_LIMIT_PER_MINUTE' api scripts .env.example compose.yaml; then
@@ -152,9 +164,17 @@ trap 'rm -f -- "${test_env}"; find api -type d -name __pycache__ -prune -exec rm
 sed \
   -e 's|LLM_STUDIO_DATA_DIR=/opt/data/llm-studio|LLM_STUDIO_DATA_DIR=/tmp/llm-studio-test|' \
   -e 's|replace-with-at-least-32-random-characters|0123456789abcdef0123456789abcdef|' \
+  -e 's|LLM_STUDIO_ACCELERATOR=auto|LLM_STUDIO_ACCELERATOR=cpu|' \
   .env.example >"${test_env}"
 
 docker compose --project-name llm-studio-test --env-file "${test_env}" --file compose.yaml config --quiet
+
+_progress "docker compose gpu overlay config --quiet"
+sed -i 's|LLM_STUDIO_ACCELERATOR=cpu|LLM_STUDIO_ACCELERATOR=cuda|' "${test_env}"
+printf 'LLM_STUDIO_DOCKERFILE=Dockerfile.cuda\n' >>"${test_env}"
+printf 'LLM_STUDIO_API_IMAGE=llm-studio-api:local-cuda\n' >>"${test_env}"
+docker compose --project-name llm-studio-test --env-file "${test_env}" \
+  --file compose.yaml --file compose.gpu.yaml config --quiet
 
 printf 'Static tests passed (%s/%s). No container was started and no model was downloaded.\n' \
   "${case_n}" "${CASE_TOTAL}"

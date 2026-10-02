@@ -15,7 +15,8 @@ Non-secret operator checklist. Secrets stay in `.env` on the host only.
 ## Before deploy
 
 1. Read `docs/CHANGELOG.md`, `docs/HISTORY.md`, and dated `history/` folders
-2. Confirm `.env`: `LLM_STUDIO_API_CPUS=3.0`, `LLM_STUDIO_CPU_THREADS=3`
+2. Confirm `.env`: `LLM_STUDIO_API_CPUS=3.0`, `LLM_STUDIO_CPU_THREADS=3`,
+   and `LLM_STUDIO_ACCELERATOR` is `cpu` or `cuda` (not `auto`)
 3. `make test` offline
 4. Deploy from authorized branch; `make restart` / compose up with profiles
 
